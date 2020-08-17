@@ -5,7 +5,6 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "homepage": "https://github.com/screenplaydev/xcodejs",
-  "private": true,
   "dependencies": {
     "chalk": "^4.1.0",
     "child_process": "^1.0.2",
