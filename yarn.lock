@@ -405,7 +405,7 @@ require-main-filename@^2.0.0:
   resolved "https://registry.yarnpkg.com/require-main-filename/-/require-main-filename-2.0.0.tgz#d0b329ecc7cc0f61649f62215be69af54aa8989b"
   integrity sha512-NKN5kMDylKuldxYLSUfrbo5Tuzh4hd+2E8NPPX02mZtn1VuREQToYe/ZdlJy+J3uCpfaiGF05e7B8W0iXbQHmg==
 
-"retype@link:../lib/retype":
+"retype@link:screenplay-libs/retype":
   version "0.0.0"
   uid ""
 
@@ -426,7 +426,7 @@ set-blocking@^2.0.0:
   resolved "https://registry.yarnpkg.com/set-blocking/-/set-blocking-2.0.0.tgz#045f9782d011ae9a6803ddd382b24392b3d890f7"
   integrity sha1-BF+XgtARrppoA93TgrJDkrPYkPc=
 
-"shared-routes@link:../lib/shared_routes":
+"shared-routes@link:./screenplay-libs/shared_routes":
   version "0.0.0"
   uid ""
 
@@ -533,7 +533,7 @@ wrappy@1:
   resolved "https://registry.yarnpkg.com/wrappy/-/wrappy-1.0.2.tgz#b5243d8f3ec1aa35f1364605bc0d1036e30ab69f"
   integrity sha1-tSQ9jz7BqjXxNkYFvA0QNuMKtp8=
 
-"xcodejs@link:../lib/xcodejs":
+"xcodejs@link:./screenplay-libs/xcodejs":
   version "0.0.0"
   uid ""
 
