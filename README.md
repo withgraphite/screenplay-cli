@@ -12,7 +12,7 @@ The official CLI for Screenplay. To run, `screenplay install <xcode_project>` (a
 
 You should now be able to call `screenplay` from the command line.
 
-If you are a Screenplay developer, and you wish to develop this all in monologue, please run `yarn link` from within the xcodejs directory and then `yarn link xcodejs` in this directory.
+If you are a Screenplay developer, and you wish to develop this all in monologue, please run `yarn link` from within the xcodejs directory and then `yarn link xcodejs` in this directory. **Note: please keep this folder self-contained within the monorepo so we can copy it into its own repo to publish.**
 
 ## Publishing
 
