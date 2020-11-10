@@ -99,7 +99,10 @@ class ArrayType extends Schema {
         this._member = member;
     }
     is(value) {
-        return Array.isArray(value) && value.every(this._member.is);
+        return (Array.isArray(value) &&
+            value.every((v) => {
+                return this._member.is(v);
+            }));
     }
 }
 exports.ArrayType = ArrayType;
@@ -192,7 +195,18 @@ exports.intersectMany = intersectMany;
 // Helpers
 function literals(inners) {
     return unionMany(inners.map((value) => {
-        return literal(value);
+        // Note: we intentionally don't use literal(). The reason is that would
+        // break literals([true, false] as const)
+        //
+        // This is because when we call literal() we need to know what type it's being
+        // called with (b/c there is only one lambda in the map), and so logically that
+        // type is inferred as the union of all members of the array. When we pass this function
+        // an array that contains both true and false, the type of literal is infered as
+        // literal<true|false>(value: NonGeneric<true|false>), our mistake catching code in
+        // NonGeneric detects that boolean extends true|false and flags it (assuming you simply
+        // called literal() without as const, e.g. literal(false) errors b/c it gets infered to
+        // literal<boolean>(false))
+        return new LiteralType(value);
     }));
 }
 exports.literals = literals;

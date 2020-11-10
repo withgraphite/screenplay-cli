@@ -158,7 +158,12 @@ export class ArrayType<TMember> extends Schema<TMember[]> {
   }
 
   is(value: unknown): value is TMember[] {
-    return Array.isArray(value) && value.every(this._member.is);
+    return (
+      Array.isArray(value) &&
+      value.every((v) => {
+        return this._member.is(v);
+      })
+    );
   }
 }
 

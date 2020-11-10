@@ -271,6 +271,10 @@ const API_ROUTES = asRouteTree({
               id: t.string,
               name: t.string,
               icon: t.optional(t.string),
+              store: t.literals(["IOS"] as const),
+              org: t.shape({
+                name: t.string,
+              }),
             })
           ),
         })

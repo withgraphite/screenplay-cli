@@ -58,23 +58,136 @@ export default class BuildSettings {
     );
   }
 
-  public buildProductsDir(baseDir: string) {
-    const buildProductsDir = this._defn["BUILT_PRODUCTS_DIR"];
-    if (!buildProductsDir) {
-      throw new Error(`buildSettings must include BUILT_PRODUCTS_DIR`);
+  public objectFilesDir(buildDir: string): string {
+    const objectFileDir = this._defn["OBJECT_FILE_DIR_normal"];
+    if (!objectFileDir) {
+      throw new Error(`buildSettings must include OBJECT_FILE_DIR_normal`);
     }
-    const productsPathMatches = buildProductsDir.match(/Build\/Products\/.*/);
-    if (!productsPathMatches) {
+    const objectFileDirPathMatchs = objectFileDir.match(/Intermediates.*/);
+    if (!objectFileDirPathMatchs) {
       throw new Error(
-        `unable to extract path from BUILT_PRODUCTS_DIR = ${buildProductsDir}`
+        `unable to extract path from OBJECT_FILE_DIR_normal = ${objectFileDir}`
       );
     }
-    return path.join(baseDir, productsPathMatches[0]);
+    const arch = this._defn["arch"];
+    if (!objectFileDir) {
+      throw new Error(`buildSettings must include "arch"`);
+    }
+    return path.join(buildDir, objectFileDirPathMatchs[0], arch);
   }
 
-  public getFrameworkPath(buildPath: string): string {
+  public linkFileListPath(buildDir: string): string {
+    const linkFileName = `${this._defn["EXECUTABLE_NAME"]}.linkFileList`;
+    return path.join(this.objectFilesDir(buildDir), linkFileName);
+  }
+
+  public ltoPath(buildDir: string): string {
+    const linkFileName = `${this._defn["EXECUTABLE_NAME"]}_lto.o`;
+    return path.join(this.objectFilesDir(buildDir), linkFileName);
+  }
+
+  public swiftModulePath(buildDir: string): string {
+    const linkFileName = `${this._defn["EXECUTABLE_NAME"]}.swiftmodule`;
+    return path.join(this.objectFilesDir(buildDir), linkFileName);
+  }
+
+  public dependencyInfoDat(buildDir: string): string {
+    const linkFileName = `${this._defn["EXECUTABLE_NAME"]}_dependency_info.dat`;
+    return path.join(this.objectFilesDir(buildDir), linkFileName);
+  }
+
+  public get installName(): string {
+    return `@rpath/${this._defn["CONTENTS_FOLDER_PATH"]}/${this.executableName}`;
+  }
+
+  public tempDir(buildDir: string): string {
     return path.join(
-      this.buildProductsDir(buildPath),
+      buildDir,
+      this._defn["TEMP_DIR"].match(/Intermediates\.noindex.*/)![0]
+    );
+  }
+
+  public get executableName(): string {
+    return this._defn["EXECUTABLE_NAME"];
+  }
+
+  public get productModuleName(): string {
+    return this._defn["PRODUCT_MODULE_NAME"];
+  }
+
+  public get unversionedProductModuleName(): string {
+    try {
+      return this.productModuleName.match(/(.*)_v(\d|undefined)/)![1];
+    } catch (err) {
+      console.error(
+        `Failed to extract unversioned product module from ${this.productModuleName}`
+      );
+      throw err;
+    }
+  }
+
+  public get executablePath(): string {
+    return this._defn["EXECUTABLE_PATH"];
+  }
+
+  public get sdkRoot(): string {
+    return this._defn["SDKROOT"];
+  }
+
+  public get correspondingDeviceSDKDir(): string {
+    return this._defn["CORRESPONDING_DEVICE_SDK_DIR"];
+  }
+
+  public get librarySearchPaths(): string {
+    return this._defn["LIBRARY_SEARCH_PATHS"];
+  }
+
+  public get testLibrarySearchPaths(): string {
+    return this._defn["TEST_LIBRARY_SEARCH_PATHS"];
+  }
+
+  public get frameworkSearchPaths(): string {
+    return this._defn["FRAMEWORK_SEARCH_PATHS"];
+  }
+
+  public get testFrameworkSearchPaths(): string {
+    return this._defn["TEST_FRAMEWORK_SEARCH_PATHS"];
+  }
+
+  public get ldRunpathSearchPaths(): string {
+    return this._defn["LD_RUNPATH_SEARCH_PATHS"];
+  }
+
+  public get linkTarget(): string {
+    return `${this._defn["NATIVE_ARCH"]}-${this._defn["LLVM_TARGET_TRIPLE_VENDOR"]}-${this._defn["LLVM_TARGET_TRIPLE_OS_VERSION"]}${this._defn["LLVM_TARGET_TRIPLE_SUFFIX"]}`;
+  }
+
+  public get marketingVersion(): string {
+    return this._defn["MARKETING_VERSION"];
+  }
+
+  public get astPath(): string {
+    return `${this._defn["NATIVE_ARCH"]}-${this._defn["LLVM_TARGET_TRIPLE_VENDOR"]}-${this._defn["LLVM_TARGET_TRIPLE_OS_VERSION"]}${this._defn["LLVM_TARGET_TRIPLE_SUFFIX"]}`;
+  }
+
+  public get targetName(): string {
+    return this._defn["TARGET_NAME"];
+  }
+
+  public get unlocalizedResourcesFolderPath(): string {
+    return this._defn["UNLOCALIZED_RESOURCES_FOLDER_PATH"];
+  }
+
+  public targetBuildDir(buildDir: string): string {
+    return path.join(
+      buildDir,
+      this._defn["TARGET_BUILD_DIR"].match(/Products\/.*/)[0]
+    );
+  }
+
+  public frameworkPath(buildDir: string): string {
+    return path.join(
+      this.targetBuildDir(buildDir),
       this._defn["CONTENTS_FOLDER_PATH"]
     );
   }

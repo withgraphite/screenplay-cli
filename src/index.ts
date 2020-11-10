@@ -1,5 +1,3 @@
-#! /usr/bin/env ts-node
-
 import fs from "fs-extra";
 import path from "path";
 import { api } from "shared-routes";
@@ -10,7 +8,7 @@ import {
   PBXNativeTarget,
   PBXProject,
   Utils,
-  XCSchemes
+  XCSchemes,
 } from "xcodejs";
 import yargs from "yargs";
 import { endpointWithArgs, requestWithArgs } from "./lib/api";

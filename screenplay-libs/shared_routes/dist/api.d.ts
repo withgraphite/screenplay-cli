@@ -248,6 +248,10 @@ declare const API_ROUTES: {
                     id: string;
                     name: string;
                     icon: string | undefined;
+                    store: "IOS";
+                    org: {
+                        name: string;
+                    };
                 }[];
             }, undefined>;
         };
