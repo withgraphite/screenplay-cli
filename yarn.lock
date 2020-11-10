@@ -405,9 +405,8 @@ require-main-filename@^2.0.0:
   resolved "https://registry.yarnpkg.com/require-main-filename/-/require-main-filename-2.0.0.tgz#d0b329ecc7cc0f61649f62215be69af54aa8989b"
   integrity sha512-NKN5kMDylKuldxYLSUfrbo5Tuzh4hd+2E8NPPX02mZtn1VuREQToYe/ZdlJy+J3uCpfaiGF05e7B8W0iXbQHmg==
 
-"retype@link:screenplay-libs/retype":
-  version "0.0.0"
-  uid ""
+"retype@file:screenplay-libs/retype":
+  version "0.1.0"
 
 rimraf@^3.0.0:
   version "3.0.2"
@@ -426,9 +425,15 @@ set-blocking@^2.0.0:
   resolved "https://registry.yarnpkg.com/set-blocking/-/set-blocking-2.0.0.tgz#045f9782d011ae9a6803ddd382b24392b3d890f7"
   integrity sha1-BF+XgtARrppoA93TgrJDkrPYkPc=
 
-"shared-routes@link:./screenplay-libs/shared_routes":
-  version "0.0.0"
-  uid ""
+"shared-routes@file:./screenplay-libs/shared_routes":
+  version "0.1.0"
+  dependencies:
+    "@types/isomorphic-fetch" "^0.0.35"
+    "@types/node-fetch" "^2.5.7"
+    isomorphic-fetch "^3.0.0"
+    node-fetch "^2.6.1"
+    path-to-regexp "^6.1.0"
+    retype "file:../../Library/Caches/Yarn/v6/npm-shared-routes-0.1.0-6f3fc59d-cd22-48a3-8501-4790f835e860-1604971393231/node_modules/retype"
 
 source-map-support@^0.5.17:
   version "0.5.19"
@@ -533,9 +538,17 @@ wrappy@1:
   resolved "https://registry.yarnpkg.com/wrappy/-/wrappy-1.0.2.tgz#b5243d8f3ec1aa35f1364605bc0d1036e30ab69f"
   integrity sha1-tSQ9jz7BqjXxNkYFvA0QNuMKtp8=
 
-"xcodejs@link:./screenplay-libs/xcodejs":
-  version "0.0.0"
-  uid ""
+"xcodejs@file:./screenplay-libs/xcodejs":
+  version "0.1.0"
+  dependencies:
+    chalk "^4.1.0"
+    child_process "^1.0.2"
+    fs-extra "^9.0.1"
+    handlebars "^4.7.6"
+    ncp "^2.0.0"
+    tmp "^0.2.1"
+    uuid "^8.3.0"
+    xml-js "^1.6.11"
 
 xml-js@*, xml-js@^1.6.11:
   version "1.6.11"
