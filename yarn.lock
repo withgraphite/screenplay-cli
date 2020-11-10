@@ -433,7 +433,7 @@ set-blocking@^2.0.0:
     isomorphic-fetch "^3.0.0"
     node-fetch "^2.6.1"
     path-to-regexp "^6.1.0"
-    retype "file:../../Library/Caches/Yarn/v6/npm-shared-routes-0.1.0-a78a6f76-b288-4cc3-b360-73d1faa6f68f-1605041119112/node_modules/retype"
+    retype "file:../../Library/Caches/Yarn/v6/npm-shared-routes-0.1.0-93d977ee-9dcd-4236-be21-6a658e27b6b7-1605041672019/node_modules/retype"
 
 source-map-support@^0.5.17:
   version "0.5.19"
