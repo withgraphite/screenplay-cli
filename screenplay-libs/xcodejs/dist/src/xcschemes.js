@@ -22,16 +22,28 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addTests = exports.createSchema = void 0;
+exports.addTests = exports.createSchema = exports.schemeExists = void 0;
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const xml_js_1 = __importDefault(require("xml-js"));
+function schemeExists(projectPath, schemeName) {
+    const schemesFolder = path.join(projectPath, "xcshareddata", "xcschemes");
+    const appSchemePath = path.join(schemesFolder, schemeName + ".xcscheme");
+    return fs.existsSync(schemesFolder) && fs.existsSync(appSchemePath);
+}
+exports.schemeExists = schemeExists;
 function createSchema(opts) {
-    console.log(opts);
     const schemesFolder = path.join(opts.projectPath, "xcshareddata", "xcschemes");
     if (fs.existsSync(schemesFolder)) {
         const appSchemePath = path.join(schemesFolder, opts.srcSchemeName + ".xcscheme");
-        if (fs.existsSync(appSchemePath)) {
+        const newSchemeName = opts.buildableNameExtension === "framework"
+            ? `Screenplay-Framework-${opts.srcSchemeName}`
+            : `Screenplay-${opts.srcSchemeName}`;
+        if (opts.buildableNameExtension === "app") {
+            fs.writeFileSync(path.join(schemesFolder, `${newSchemeName}.xcscheme`), createAppScheme(`${opts.newBuildTarget.name()}.${opts.buildableNameExtension}`, opts.newBuildTarget.name(), opts.newBuildTarget._id, path.basename(opts.projectPath)));
+            return newSchemeName;
+        }
+        else if (fs.existsSync(appSchemePath)) {
             const data = fs.readFileSync(appSchemePath);
             const defn = xml_js_1.default.xml2js(data.toString(), { compact: true });
             recursivelyMutateBuildRefs({
@@ -42,9 +54,6 @@ function createSchema(opts) {
                 originalBlueprintIdentifier: opts.srcAppTarget._id,
                 projectPath: opts.projectPath,
             });
-            const newSchemeName = opts.buildableNameExtension === "framework"
-                ? `Screenplay-Framework-${opts.srcSchemeName}`
-                : `Screenplay-${opts.srcSchemeName}`;
             fs.writeFileSync(path.join(schemesFolder, `${newSchemeName}.xcscheme`), xml_js_1.default.js2xml(defn, { compact: true }));
             return newSchemeName;
         }
@@ -55,6 +64,33 @@ function createSchema(opts) {
     throw new Error(`No XCSchemes folder found at ${schemesFolder}`);
 }
 exports.createSchema = createSchema;
+function createAppScheme(buildableName, blueprintName, blueprintIdentifier, container) {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+  <Scheme LastUpgradeVersion="1160" version="1.3">
+    <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="NO">
+      <BuildActionEntries>
+        <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
+          <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="${blueprintIdentifier}" BuildableName="${buildableName}" BlueprintName="${blueprintName}" ReferencedContainer="container:${container}" />
+        </BuildActionEntry>
+      </BuildActionEntries>
+    </BuildAction>
+    <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES">
+      <Testables />
+    </TestAction>
+    <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES" debugServiceExtension="internal" allowLocationSimulation="YES">
+      <BuildableProductRunnable runnableDebuggingMode="0">
+        <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="${blueprintIdentifier}" BuildableName="${buildableName}" BlueprintName="${blueprintName}" ReferencedContainer="container:${container}" />
+      </BuildableProductRunnable>
+    </LaunchAction>
+    <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES">
+      <BuildableProductRunnable runnableDebuggingMode="0">
+        <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="${blueprintIdentifier}" BuildableName="${buildableName}" BlueprintName="${blueprintName}" ReferencedContainer="container:${container}" />
+      </BuildableProductRunnable>
+    </ProfileAction>
+    <AnalyzeAction buildConfiguration="Debug" />
+    <ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES" />
+  </Scheme>`;
+}
 function recursivelyMutateBuildRefs(options) {
     Object.keys(options.defn).forEach((key) => {
         if (key === "_attributes" || key === "_declaration") {
@@ -69,34 +105,31 @@ function recursivelyMutateBuildRefs(options) {
                 attributes["BlueprintName"] = options.blueprintName;
                 attributes["ReferencedContainer"] = `container:${path.basename(options.projectPath)}`;
             }
-        }
-        else {
-            const value = options.defn[key];
-            if (value instanceof Array) {
-                value.forEach((innerValue) => {
-                    recursivelyMutateBuildRefs({
-                        defn: innerValue,
-                        buildableName: options.buildableName,
-                        blueprintName: options.blueprintName,
-                        blueprintIdentifier: options.blueprintIdentifier,
-                        originalBlueprintIdentifier: options.originalBlueprintIdentifier,
-                        projectPath: options.projectPath,
-                    });
-                });
+            else if (attributes["BlueprintIdentifier"] != options.blueprintIdentifier) {
             }
-            else if (value instanceof Object) {
+        }
+        const value = options.defn[key];
+        if (value instanceof Array) {
+            value.forEach((innerValue) => {
                 recursivelyMutateBuildRefs({
-                    defn: value,
+                    defn: innerValue,
                     buildableName: options.buildableName,
                     blueprintName: options.blueprintName,
                     blueprintIdentifier: options.blueprintIdentifier,
                     originalBlueprintIdentifier: options.originalBlueprintIdentifier,
                     projectPath: options.projectPath,
                 });
-            }
-            else {
-                throw new Error(`Unknown literal "${key}" found in xcscheme parse`);
-            }
+            });
+        }
+        else if (value instanceof Object) {
+            recursivelyMutateBuildRefs({
+                defn: value,
+                buildableName: options.buildableName,
+                blueprintName: options.blueprintName,
+                blueprintIdentifier: options.blueprintIdentifier,
+                originalBlueprintIdentifier: options.originalBlueprintIdentifier,
+                projectPath: options.projectPath,
+            });
         }
     });
 }
@@ -116,17 +149,7 @@ function addTests(opts) {
     const appSchemePath = path.join(schemesFolder, `${opts.appScheme}.xcscheme`);
     const data = fs.readFileSync(appSchemePath);
     const defn = xml_js_1.default.xml2js(data.toString(), { compact: true });
-    const testableReference = defn["Scheme"]["TestAction"]["Testables"]["TestableReference"];
-    if (!testableReference) {
-        // no testable references exist, add a new empty array of them.
-        defn["Scheme"]["TestAction"]["Testables"]["TestableReference"] = [];
-    }
-    else if (!Array.isArray(testableReference)) {
-        // no testable references exist, add a new empty array of them.
-        defn["Scheme"]["TestAction"]["Testables"]["TestableReference"] = [
-            defn["Scheme"]["TestAction"]["Testables"]["TestableReference"],
-        ];
-    }
+    defn["Scheme"]["TestAction"]["Testables"]["TestableReference"] = [];
     defn["Scheme"]["TestAction"]["Testables"]["TestableReference"].push({
         _attributes: {
             skipped: "NO",

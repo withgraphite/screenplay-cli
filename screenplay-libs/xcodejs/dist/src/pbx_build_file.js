@@ -8,7 +8,7 @@ const pbx_object_1 = __importDefault(require("./pbx_object"));
 const utils_1 = require("./utils");
 const DEFAULTS = {
     isa: "PBXBuildFile",
-    settings: { ATTRIBUTES: ["RemoveHeadersOnCopy"] },
+    settings: { ATTRIBUTES: ["RemoveHeadersOnCopy", "CodeSignOnCopy"] },
 };
 class PBXBuildFile extends pbx_object_1.default {
     constructor(id, proj, data) {

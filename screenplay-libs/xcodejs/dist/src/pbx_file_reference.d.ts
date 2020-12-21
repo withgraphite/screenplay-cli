@@ -12,6 +12,7 @@ export default class PBXFileReference extends PBXObject {
     static createFromFrameworkPath(frameworkPath: string, proj: PBXProj): PBXFileReference;
     static createFromAbsolutePath(filePath: string, fileType: string, proj: PBXProj): PBXFileReference;
     path(): string;
-    fullPath(): string;
+    fullPath(returnNullIfNotExists?: false): string;
+    fullPath(returnNullIfNotExists: true): string | null;
 }
 export {};

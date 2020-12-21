@@ -1,10 +1,5 @@
 import * as t from "retype";
-import { request, TRoute } from "shared-routes";
-
-const API_SERVER =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:8000/v1"
-    : "https://api.screenplay.dev/v1";
+import { API_SERVER, request, TRoute } from "shared-routes";
 
 export function endpointWithArgs<TActualRoute extends TRoute>(
   route: TActualRoute & {

@@ -22,41 +22,58 @@ const API_ROUTES = asRouteTree({
       },
     },
   },
-  createFramework: {
-    method: "POST",
-    url: "/app-secret/:appSecret/frameworks",
-    urlParams: {
-      appSecret: t.string,
+  versionBundles: {
+    upload: {
+      method: "POST",
+      url: "/app-secret/:appSecret/versions",
+      urlParams: {
+        appSecret: t.string,
+      },
+      params: {
+        semver: t.string,
+        name: t.string,
+        archs: t.array(t.string),
+      },
+      response: {
+        id: t.string,
+        presignedUrl: t.nullable(t.string),
+      },
     },
-    params: {
-      semVar: t.string,
-      name: t.string,
+    markUploadComplete: {
+      method: "POST",
+      url: "/app-secret/:appSecret/version/:versionId/upload-complete",
+      urlParams: {
+        appSecret: t.string,
+        versionId: t.string,
+      },
     },
-    response: {
-      id: t.string,
+    downloadLatest: {
+      method: "GET",
+      url: "/app-secret/:appSecret/version-bundles/",
+      urlParams: {
+        appSecret: t.string,
+      },
+      queryParams: {
+        archs: t.string,
+        maxSemver: t.string,
+      },
+      response: {
+        versionBundleUrls: t.array(t.string),
+      },
     },
-  },
-  uploadFramework: {
-    method: "PUT",
-    url: "/framework/:frameworkId",
-    urlParams: {
-      frameworkId: t.string,
-    },
-    params: {
-      appSecret: t.string,
-    },
-    response: {
-      presignedUrl: t.nullable(t.string),
-    },
-  },
-  latestFramework: {
-    method: "GET",
-    url: "/frameworks/latest",
-    queryParams: {
-      appSecret: t.string,
-    },
-    response: {
-      frameworkUrl: t.string,
+    download: {
+      method: "GET",
+      url: "/version-bundles/:semver",
+      urlParams: {
+        semver: t.string,
+      },
+      queryParams: {
+        appSecret: t.string,
+        archs: t.string,
+      },
+      response: {
+        versionBundleUrl: t.string,
+      },
     },
   },
   demo: {
@@ -98,6 +115,7 @@ const API_ROUTES = asRouteTree({
         name: t.string,
       },
       response: {
+        id: t.string,
         appSecret: t.string,
       },
     },
@@ -119,12 +137,28 @@ const API_ROUTES = asRouteTree({
         versions: t.array(
           t.shape({
             embeddedId: t.number,
-            versionId: t.string,
+            semver: t.string,
           })
         ),
       },
       response: {
+        id: t.string,
         releaseSecret: t.string,
+      },
+    },
+    buildMetadata: {
+      method: "POST",
+      url: "/app-secret/:appSecret/build-metadata",
+      urlParams: {
+        appSecret: t.string,
+      },
+      params: {
+        latestVersionSizeInKb: t.number,
+        totalBundleSizeInKb: t.number,
+        latestVersionTimeInS: t.number,
+        totalBundleTimeInS: t.number,
+        bundleId: t.string,
+        releaseId: t.string,
       },
     },
   },
@@ -141,10 +175,11 @@ const API_ROUTES = asRouteTree({
           name: t.string,
           icon: t.nullable(t.string),
           store: t.literals(["IOS"] as const),
+          totalUsers: t.number,
         }),
         name: t.string,
         created: t.number,
-        adoption: t.number,
+        userCount: t.number,
         timeline: t.array(
           t.shape({
             actor: t.nullable(
@@ -155,19 +190,12 @@ const API_ROUTES = asRouteTree({
               })
             ),
             date: t.number,
-            event: t.unionMany([
-              t.shape({
-                kind: t.literal("CREATED" as const),
-              }),
-              t.shape({
-                kind: t.literal("RELEASED" as const),
-              }),
-              t.shape({
-                kind: t.literal("RULES_CHANGED" as const),
-                beforeRuleSetId: t.string,
-                afterRuleSetId: t.string,
-              }),
-            ]),
+            event: t.shape({
+              kind: t.literals(["CREATED", "RULES_CHANGED"] as const),
+            }),
+            note: t.nullable(t.string),
+            beforeRuleSetId: t.string,
+            afterRuleSetId: t.string,
           })
         ),
         versions: t.array(
@@ -185,26 +213,82 @@ const API_ROUTES = asRouteTree({
       urlParams: {
         appId: t.string,
         releaseId: t.string,
+      },
+      queryParams: {
         rollbackRuleSetId: t.optional(t.string),
       },
       response: {
         rollbackRules: t.array(
           t.shape({
-            id: t.string,
             targetVersionId: t.string,
             conditions: t.array(
               t.unionMany([
                 t.shape({
-                  kind: t.literal("DEVICE" as const),
+                  op: t.literal("DEVICE_MATCHES" as const),
+                  matches: t.string,
                 }),
                 t.shape({
-                  kind: t.literal("OS" as const),
+                  op: t.literal("OS_MATCHES" as const),
+                  matches: t.string,
                 }),
               ])
             ),
           })
         ),
         everyoneElseVersionId: t.string,
+      },
+    },
+    saveReleaseRollbacks: {
+      method: "PUT",
+      url: "/app/:appId/release/:releaseId/rollbacks",
+      urlParams: {
+        appId: t.string,
+        releaseId: t.string,
+      },
+      params: {
+        rollbackRules: t.array(
+          t.shape({
+            targetVersionId: t.string,
+            conditions: t.array(
+              t.unionMany([
+                t.shape({
+                  op: t.literal("DEVICE_MATCHES" as const),
+                  matches: t.string,
+                }),
+                t.shape({
+                  op: t.literal("OS_MATCHES" as const),
+                  matches: t.string,
+                }),
+              ])
+            ),
+          })
+        ),
+        everyoneElseVersionId: t.string,
+      },
+    },
+    releaseRollbacksConditionTypeahead: {
+      method: "GET",
+      url: "/app/:appId/release/:releaseId/rollbacks/conditions",
+      urlParams: {
+        appId: t.string,
+        releaseId: t.string,
+      },
+      queryParams: {
+        q: t.string,
+      },
+      response: {
+        conditions: t.array(
+          t.unionMany([
+            t.shape({
+              op: t.literal("DEVICE_MATCHES" as const),
+              matches: t.string,
+            }),
+            t.shape({
+              op: t.literal("OS_MATCHES" as const),
+              matches: t.string,
+            }),
+          ])
+        ),
       },
     },
     releasesHeader: {
@@ -233,6 +317,8 @@ const API_ROUTES = asRouteTree({
       url: "/app/:appId/releases",
       urlParams: {
         appId: t.string,
+      },
+      queryParams: {
         beforeDate: t.optional(t.string),
       },
       response: {
@@ -263,6 +349,7 @@ const API_ROUTES = asRouteTree({
           onboardingComplete: t.boolean,
           firstName: t.string,
           lastName: t.string,
+          employee: t.boolean,
           profilePicture: t.optional(t.string),
           email: t.string,
           mostRecentAppId: t.optional(t.string),
@@ -279,6 +366,96 @@ const API_ROUTES = asRouteTree({
           ),
         })
       ),
+    },
+  },
+  docs: {
+    page: {
+      method: "GET",
+      url: "/docs/page",
+      queryParams: {
+        // can't put the slug in the URL b/c parameters with "/"s are only supported by path-to-regexp > 1.0,
+        // and express is pinned to 0.17
+        slug: t.string,
+      },
+      response: {
+        id: t.string,
+        title: t.string,
+        text: t.string,
+        published: t.boolean,
+      },
+    },
+    pages: {
+      method: "GET",
+      url: "/docs/pages",
+      response: {
+        pages: t.array(
+          t.shape({
+            id: t.string,
+            title: t.string,
+            published: t.boolean,
+            slug: t.string,
+          })
+        ),
+      },
+    },
+    navbar: {
+      method: "GET",
+      url: "/docs/navbar",
+      response: {
+        entries: t.array(
+          t.shape({
+            page: t.nullable(
+              t.shape({
+                slug: t.string,
+                pageId: t.string,
+              })
+            ),
+            title: t.string,
+            realTitle: t.nullable(t.string),
+            depth: t.number,
+          })
+        ),
+      },
+    },
+    createPage: {
+      method: "POST",
+      url: "/docs/pages",
+      response: {
+        slug: t.string,
+      },
+    },
+    editPage: {
+      method: "PUT",
+      url: "/docs/page-id/:id",
+      urlParams: {
+        id: t.string,
+      },
+      params: {
+        slug: t.string,
+        title: t.string,
+        text: t.string,
+        published: t.boolean,
+      },
+    },
+    deletePage: {
+      method: "DELETE",
+      url: "/docs/page-id/:id",
+      urlParams: {
+        id: t.string,
+      },
+    },
+    editNavbar: {
+      method: "PUT",
+      url: "/docs/navbar",
+      params: {
+        entries: t.array(
+          t.shape({
+            pageId: t.nullable(t.string),
+            title: t.nullable(t.string),
+            depth: t.number,
+          })
+        ),
+      },
     },
   },
   onboarding: {

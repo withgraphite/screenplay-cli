@@ -5,10 +5,10 @@ export declare type TRoute = {
         [key: string]: t.Schema<unknown>;
     };
     urlParams?: {
-        [key: string]: t.Schema<unknown>;
+        [key: string]: t.Schema<string>;
     };
     queryParams?: {
-        [key: string]: t.Schema<unknown>;
+        [key: string]: t.Schema<string | undefined>;
     };
 } & (({
     method: "POST" | "PATCH" | "DELETE" | "PUT";

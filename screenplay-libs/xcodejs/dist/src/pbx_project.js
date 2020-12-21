@@ -386,13 +386,17 @@ class PBXProj {
                 });
             }
         });
+        if (potentialAppIcons.length == 0) {
+            return null;
+        }
         // Order lexigraphically - xcode seems to search them in this order
         potentialAppIcons.sort();
         // Get larget icon
         const rawContents = fs_extra_1.default.readFileSync(path.join(potentialAppIcons[0], "Contents.json"));
         const contents = JSON.parse(rawContents.toString());
         for (let imageMetadata of contents["images"]) {
-            if (imageMetadata["idiom"] === "ios-marketing") {
+            if (imageMetadata["idiom"] === "ios-marketing" &&
+                imageMetadata["filename"]) {
                 return path.join(potentialAppIcons[0], imageMetadata["filename"]);
             }
         }
@@ -400,7 +404,9 @@ class PBXProj {
     }
     extractAppName(buildSettings) {
         // Get name from info plist
-        const plist = plist_1.Plist.fromFile(path.join(this._srcRoot, buildSettings.get("INFOPLIST_FILE")));
+        const plist = plist_1.Plist.fromFile(path.isAbsolute(buildSettings.fetch("INFOPLIST_FILE"))
+            ? buildSettings.fetch("INFOPLIST_FILE")
+            : path.join(this._srcRoot, buildSettings.fetch("INFOPLIST_FILE")));
         let name = plist.get("CFBundleDisplayName") || plist.get("CFBundleName");
         // interpolate in build settings values
         const expandBuildSettings = buildSettings.get("INFOPLIST_EXPAND_BUILD_SETTINGS");

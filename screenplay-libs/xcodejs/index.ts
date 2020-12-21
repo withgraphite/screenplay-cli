@@ -1,6 +1,7 @@
 import BuildSettings, {
   getBuildSettingsAndTargetNameFromTarget,
 } from "./src/build_settings";
+import { destinationString, DestinationType } from "./src/destination_type";
 import PBXBuildConfig from "./src/pbx_build_config";
 import PBXBuildConfigList from "./src/pbx_build_config_list";
 import PBXBuildFile from "./src/pbx_build_file";
@@ -43,4 +44,6 @@ export {
   XCSchemes,
   BuildSettings,
   getBuildSettingsAndTargetNameFromTarget,
+  DestinationType,
+  destinationString,
 };

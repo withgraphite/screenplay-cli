@@ -26,4 +26,6 @@ Object.defineProperty(exports, "assets", { enumerable: true, get: function () { 
 var oauth_1 = require("./oauth");
 Object.defineProperty(exports, "oauth", { enumerable: true, get: function () { return oauth_1.default; } });
 exports.request = __importStar(require("./request"));
+var server_1 = require("./server");
+Object.defineProperty(exports, "API_SERVER", { enumerable: true, get: function () { return server_1.API_SERVER; } });
 //# sourceMappingURL=index.js.map

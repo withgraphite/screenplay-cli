@@ -1,3 +1,4 @@
+import BuildSettings from "./build_settings";
 export declare class Plist {
     _defn: {
         [key: string]: any;
@@ -5,7 +6,9 @@ export declare class Plist {
     constructor(defn: {});
     static fromFile(file: string): Plist;
     get(key: string): any;
-    static mergeKeyFromOthers(key: string, values: any[]): any;
-    static fromOthers(plists: Plist[]): Plist;
+    private static _renderWithValues;
+    renderWithValues(values: BuildSettings): Plist;
+    static mergeKeyFromOthers(key: string, values: any[], overrideList: string[]): any;
+    static fromOthers(plists: Plist[], overrideList: string[]): Plist;
     writeFile(file: string): void;
 }

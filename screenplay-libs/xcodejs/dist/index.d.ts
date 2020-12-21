@@ -1,4 +1,5 @@
 import BuildSettings, { getBuildSettingsAndTargetNameFromTarget } from "./src/build_settings";
+import { destinationString, DestinationType } from "./src/destination_type";
 import PBXBuildConfig from "./src/pbx_build_config";
 import PBXBuildConfigList from "./src/pbx_build_config_list";
 import PBXBuildFile from "./src/pbx_build_file";
@@ -18,4 +19,4 @@ import { XCConfig } from "./src/xcconfig";
 import * as XCSchemes from "./src/xcschemes";
 import { XCSettings } from "./src/xcsettings";
 import { XCWorkspace } from "./src/xcworkspace";
-export { PBXBuildConfig, PBXBuildConfigList, PBXBuildPhase, PBXBuildFile, PBXFileReference, PBXGroup, PBXNativeTarget, PBXObject, PBXProject, PBXCopyFilesBuildPhase, PBXRootObject, PBXTargetDependency, PBXTargetProxy, Plist, XCConfig, XCWorkspace, XCSettings, Utils, XCSchemes, BuildSettings, getBuildSettingsAndTargetNameFromTarget, };
+export { PBXBuildConfig, PBXBuildConfigList, PBXBuildPhase, PBXBuildFile, PBXFileReference, PBXGroup, PBXNativeTarget, PBXObject, PBXProject, PBXCopyFilesBuildPhase, PBXRootObject, PBXTargetDependency, PBXTargetProxy, Plist, XCConfig, XCWorkspace, XCSettings, Utils, XCSchemes, BuildSettings, getBuildSettingsAndTargetNameFromTarget, DestinationType, destinationString, };

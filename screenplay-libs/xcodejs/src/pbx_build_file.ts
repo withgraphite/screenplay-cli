@@ -22,7 +22,7 @@ type PBXBuildFileData = {
 
 const DEFAULTS = {
   isa: "PBXBuildFile",
-  settings: { ATTRIBUTES: ["RemoveHeadersOnCopy"] }, // Intentionally excluding "CodeSignOnCopy"
+  settings: { ATTRIBUTES: ["RemoveHeadersOnCopy", "CodeSignOnCopy"] }, // Intentionally excluding "CodeSignOnCopy"
 };
 
 export default class PBXBuildFile extends PBXObject {

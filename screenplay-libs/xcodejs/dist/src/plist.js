@@ -1,7 +1,13 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Plist = void 0;
+const chalk_1 = __importDefault(require("chalk"));
 const child_process_1 = require("child_process");
+// Note: DO NOT ASSUME this is an info.plist (it could also be entitlements)
+// If you need to add info.plist specific methods here, please subclass this
 class Plist {
     constructor(defn) {
         this._defn = defn;
@@ -14,8 +20,36 @@ class Plist {
     get(key) {
         return this._defn[key];
     }
-    static mergeKeyFromOthers(key, values) {
-        // Add specific key handlers here
+    // This is ignoring plist modifiers for now...
+    static _renderWithValues(node, values) {
+        if (typeof node === "string") {
+            return values.expand(node);
+        }
+        else if (Array.isArray(node)) {
+            return node.map((v) => {
+                return this._renderWithValues(v, values);
+            });
+        }
+        else if (node instanceof Object) {
+            const ret = {};
+            Object.keys(node).forEach((key) => {
+                ret[key] = this._renderWithValues(node[key], values);
+            });
+            return ret;
+        }
+        return node;
+    }
+    renderWithValues(values) {
+        return new Plist(Plist._renderWithValues(this._defn, values));
+    }
+    static mergeKeyFromOthers(key, values, overrideList) {
+        // If override value, take the newest value.
+        console.log(`Override list = ${overrideList}`);
+        if (overrideList.includes(key)) {
+            const newestVal = values[0];
+            console.log(chalk_1.default.yellow(`warning: Merging plist value conflict ${key} with lastest value ${newestVal}`));
+            return newestVal;
+        }
         // No specific handler found, assuming they must all be identical
         const firstValue = values[0];
         const firstValueJSON = JSON.stringify(firstValue);
@@ -24,13 +58,21 @@ class Plist {
             // works for now
             return JSON.stringify(value) === firstValueJSON;
         })) {
-            throw ("Different values detected for key '" +
+            const errorMessage = "Different values detected for key '" +
                 key +
-                "', this key cannot be different");
+                "'(" +
+                values
+                    .map((v) => {
+                    return `${JSON.stringify(v, null, 2)}`;
+                })
+                    .join(", ") +
+                `), this key cannot be different. Consider accepting the newer value by adding ${key} to the "SCREENPLAY_PLIST_CONFLICT_ALLOWLIST" build settings.`;
+            console.error(chalk_1.default.red(errorMessage));
+            throw new Error(errorMessage);
         }
-        return values[0];
+        return firstValue;
     }
-    static fromOthers(plists) {
+    static fromOthers(plists, overrideList) {
         const allKeys = new Set();
         plists.forEach((plist) => {
             Object.keys(plist._defn).forEach((k) => {
@@ -45,12 +87,13 @@ class Plist {
             })
                 .filter((v) => {
                 return v !== undefined;
-            }));
+            }), overrideList);
         });
         return new Plist(mergedDefn);
     }
     writeFile(file) {
-        child_process_1.execSync("plutil -convert xml1 - -o " + file, {
+        console.log("Writing plist", this._defn);
+        child_process_1.execSync(`plutil -convert xml1 - -o "${file}"`, {
             input: JSON.stringify(this._defn),
         });
     }

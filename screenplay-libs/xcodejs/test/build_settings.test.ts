@@ -6,12 +6,11 @@ describe("BuildSettings", function () {
   it("Can extract the correct linkFilePath", () => {
     const buildSettingsPath = "test/resources/build_settings.json";
     const buildSettings = BuildSettings.loadFromFile(buildSettingsPath);
-    const baseDir = "abc";
-    expect(buildSettings.linkFileListPath(baseDir)).to.eq(
-      "abc/Build/Intermediates.noindex/Screenplay-RepCounter.build/Debug-iphonesimulator/Screenplay-Framework-RepCounter.build/Objects-normal/x86_64/Screenplay-Framework-RepCounter.v0.2.3-1462361249717.linkFileList"
+    expect(buildSettings.objectFilesDir.match(/monologue.+/)![0]).to.eq(
+      "monologue/build-phase/cache/Build/Intermediates.noindex/Screenplay-RepCounter.build/Debug-iphonesimulator/Screenplay-Framework-RepCounter.build/Objects-normal/x86_64"
     );
-    expect(buildSettings.ltoPath(baseDir)).to.eq(
-      "abc/Build/Intermediates.noindex/Screenplay-RepCounter.build/Debug-iphonesimulator/Screenplay-Framework-RepCounter.build/Objects-normal/x86_64/Screenplay-Framework-RepCounter.v0.2.3-1462361249717_lto.o"
+    expect(buildSettings.fatFrameworkPath.match(/monologue.+/)![0]).to.eq(
+      "monologue/build-phase/cache/Build/Products/Debug-iphonesimulator/Screenplay-Framework-RepCounter.v0.2.3-1462361249717.framework"
     );
     expect(buildSettings.linkTarget).to.eq("x86_64-apple-ios13.6-simulator");
   });

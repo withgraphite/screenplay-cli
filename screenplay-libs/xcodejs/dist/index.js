@@ -22,10 +22,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBuildSettingsAndTargetNameFromTarget = exports.BuildSettings = exports.XCSchemes = exports.Utils = exports.XCSettings = exports.XCWorkspace = exports.XCConfig = exports.Plist = exports.PBXTargetProxy = exports.PBXTargetDependency = exports.PBXRootObject = exports.PBXCopyFilesBuildPhase = exports.PBXProject = exports.PBXObject = exports.PBXNativeTarget = exports.PBXGroup = exports.PBXFileReference = exports.PBXBuildFile = exports.PBXBuildPhase = exports.PBXBuildConfigList = exports.PBXBuildConfig = void 0;
+exports.destinationString = exports.DestinationType = exports.getBuildSettingsAndTargetNameFromTarget = exports.BuildSettings = exports.XCSchemes = exports.Utils = exports.XCSettings = exports.XCWorkspace = exports.XCConfig = exports.Plist = exports.PBXTargetProxy = exports.PBXTargetDependency = exports.PBXRootObject = exports.PBXCopyFilesBuildPhase = exports.PBXProject = exports.PBXObject = exports.PBXNativeTarget = exports.PBXGroup = exports.PBXFileReference = exports.PBXBuildFile = exports.PBXBuildPhase = exports.PBXBuildConfigList = exports.PBXBuildConfig = void 0;
 const build_settings_1 = __importStar(require("./src/build_settings"));
 exports.BuildSettings = build_settings_1.default;
 Object.defineProperty(exports, "getBuildSettingsAndTargetNameFromTarget", { enumerable: true, get: function () { return build_settings_1.getBuildSettingsAndTargetNameFromTarget; } });
+const destination_type_1 = require("./src/destination_type");
+Object.defineProperty(exports, "destinationString", { enumerable: true, get: function () { return destination_type_1.destinationString; } });
+Object.defineProperty(exports, "DestinationType", { enumerable: true, get: function () { return destination_type_1.DestinationType; } });
 const pbx_build_config_1 = __importDefault(require("./src/pbx_build_config"));
 exports.PBXBuildConfig = pbx_build_config_1.default;
 const pbx_build_config_list_1 = __importDefault(require("./src/pbx_build_config_list"));

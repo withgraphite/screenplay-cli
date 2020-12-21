@@ -533,6 +533,10 @@ export default class PBXProj {
       }
     });
 
+    if (potentialAppIcons.length == 0) {
+      return null;
+    }
+
     // Order lexigraphically - xcode seems to search them in this order
     potentialAppIcons.sort();
 
@@ -543,7 +547,10 @@ export default class PBXProj {
     const contents = JSON.parse(rawContents.toString());
 
     for (let imageMetadata of contents["images"]) {
-      if (imageMetadata["idiom"] === "ios-marketing") {
+      if (
+        imageMetadata["idiom"] === "ios-marketing" &&
+        imageMetadata["filename"]
+      ) {
         return path.join(potentialAppIcons[0], imageMetadata["filename"]);
       }
     }
@@ -554,7 +561,9 @@ export default class PBXProj {
   public extractAppName(buildSettings: BuildSettings): string | null {
     // Get name from info plist
     const plist = Plist.fromFile(
-      path.join(this._srcRoot, buildSettings.get("INFOPLIST_FILE"))
+      path.isAbsolute(buildSettings.fetch("INFOPLIST_FILE"))
+        ? buildSettings.fetch("INFOPLIST_FILE")
+        : path.join(this._srcRoot, buildSettings.fetch("INFOPLIST_FILE"))
     );
     let name = plist.get("CFBundleDisplayName") || plist.get("CFBundleName");
 

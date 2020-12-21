@@ -4,9 +4,14 @@ import * as fs from "fs-extra";
 import * as path from "path";
 
 export default class BuildSettings {
-  _defn: Record<string, any>;
+  _defn: Record<string, string>;
 
-  constructor(defn: {}) {
+  constructor(defn: Record<string, string>) {
+    if (!defn["TARGET_BUILD_DIR"]) {
+      throw new Error(
+        `Build settings missing value for TARGET_BUILD_DIR, xcodebuild call likely failed before completing`
+      );
+    }
     this._defn = defn;
   }
 
@@ -28,7 +33,7 @@ export default class BuildSettings {
     fs.writeFileSync(filePath, JSON.stringify(this._defn, null, 2));
   }
 
-  public get(key: string): any {
+  public get(key: string): string | undefined {
     return this._defn[key];
   }
 
@@ -48,7 +53,7 @@ export default class BuildSettings {
       (match, _, parenSetting, bracketSetting) => {
         const setting = parenSetting || bracketSetting;
         const tokens = setting.split(":");
-        let value = this.get(tokens.shift());
+        let value = this.fetchOrUndefined(tokens.shift()) || "";
         for (let token of tokens) {
           value = this.applyOperation(token, value);
         }
@@ -58,61 +63,58 @@ export default class BuildSettings {
     );
   }
 
-  public objectFilesDir(buildDir: string): string {
-    const objectFileDir = this._defn["OBJECT_FILE_DIR_normal"];
-    if (!objectFileDir) {
-      throw new Error(`buildSettings must include OBJECT_FILE_DIR_normal`);
+  public fetch(key: string): string {
+    const value = this._defn[key];
+    if (!value) {
+      throw new Error(`No value for "${key}" found in build settings`);
     }
-    const objectFileDirPathMatchs = objectFileDir.match(/Intermediates.*/);
-    if (!objectFileDirPathMatchs) {
-      throw new Error(
-        `unable to extract path from OBJECT_FILE_DIR_normal = ${objectFileDir}`
-      );
-    }
-    const arch = this._defn["arch"];
-    if (!objectFileDir) {
-      throw new Error(`buildSettings must include "arch"`);
-    }
-    return path.join(buildDir, objectFileDirPathMatchs[0], arch);
+    return value;
   }
 
-  public linkFileListPath(buildDir: string): string {
-    const linkFileName = `${this._defn["EXECUTABLE_NAME"]}.linkFileList`;
-    return path.join(this.objectFilesDir(buildDir), linkFileName);
+  public fetchOrUndefined(key: string): string | undefined {
+    return this._defn[key];
   }
 
-  public ltoPath(buildDir: string): string {
-    const linkFileName = `${this._defn["EXECUTABLE_NAME"]}_lto.o`;
-    return path.join(this.objectFilesDir(buildDir), linkFileName);
-  }
-
-  public swiftModulePath(buildDir: string): string {
-    const linkFileName = `${this._defn["EXECUTABLE_NAME"]}.swiftmodule`;
-    return path.join(this.objectFilesDir(buildDir), linkFileName);
-  }
-
-  public dependencyInfoDat(buildDir: string): string {
-    const linkFileName = `${this._defn["EXECUTABLE_NAME"]}_dependency_info.dat`;
-    return path.join(this.objectFilesDir(buildDir), linkFileName);
+  public get objectFilesDir(): string {
+    return this.fetch("OBJECT_FILE_DIR_normal");
   }
 
   public get installName(): string {
-    return `@rpath/${this._defn["CONTENTS_FOLDER_PATH"]}/${this.executableName}`;
+    return `@rpath/${this.fetch("CONTENTS_FOLDER_PATH")}/${
+      this.executableName
+    }`;
   }
 
-  public tempDir(buildDir: string): string {
-    return path.join(
-      buildDir,
-      this._defn["TEMP_DIR"].match(/Intermediates\.noindex.*/)![0]
-    );
+  public get tempDir(): string {
+    return this.fetch("TEMP_DIR");
+  }
+
+  public get infoplistFile(): string {
+    return this.fetch("INFOPLIST_FILE");
+  }
+
+  public get entitlementsFile(): string | undefined {
+    return this.fetchOrUndefined("CODE_SIGN_ENTITLEMENTS");
+  }
+
+  public get srcRoot(): string {
+    return this.fetch("SRCROOT");
   }
 
   public get executableName(): string {
-    return this._defn["EXECUTABLE_NAME"];
+    return this.fetch("EXECUTABLE_NAME");
+  }
+
+  public get configuration(): string {
+    return this.fetch("CONFIGURATION");
+  }
+
+  public get screenplaySemVer(): string {
+    return this.fetch("SCREENPLAY_SEMVER");
   }
 
   public get productModuleName(): string {
-    return this._defn["PRODUCT_MODULE_NAME"];
+    return this.fetch("PRODUCT_MODULE_NAME");
   }
 
   public get unversionedProductModuleName(): string {
@@ -127,69 +129,87 @@ export default class BuildSettings {
   }
 
   public get executablePath(): string {
-    return this._defn["EXECUTABLE_PATH"];
+    return this.fetch("EXECUTABLE_PATH");
+  }
+
+  public get archs(): string {
+    return this.fetch("ARCHS");
   }
 
   public get sdkRoot(): string {
-    return this._defn["SDKROOT"];
+    return this.fetch("SDKROOT");
+  }
+
+  public get sdkVersion(): string {
+    return this.fetch("SDK_VERSION");
   }
 
   public get correspondingDeviceSDKDir(): string {
-    return this._defn["CORRESPONDING_DEVICE_SDK_DIR"];
+    return this.fetch("CORRESPONDING_DEVICE_SDK_DIR");
   }
 
   public get librarySearchPaths(): string {
-    return this._defn["LIBRARY_SEARCH_PATHS"];
+    return this.fetch("LIBRARY_SEARCH_PATHS");
   }
 
   public get testLibrarySearchPaths(): string {
-    return this._defn["TEST_LIBRARY_SEARCH_PATHS"];
+    return this.fetch("TEST_LIBRARY_SEARCH_PATHS");
   }
 
   public get frameworkSearchPaths(): string {
-    return this._defn["FRAMEWORK_SEARCH_PATHS"];
+    return this.fetch("FRAMEWORK_SEARCH_PATHS");
   }
 
   public get testFrameworkSearchPaths(): string {
-    return this._defn["TEST_FRAMEWORK_SEARCH_PATHS"];
+    return this.fetch("TEST_FRAMEWORK_SEARCH_PATHS");
   }
 
   public get ldRunpathSearchPaths(): string {
-    return this._defn["LD_RUNPATH_SEARCH_PATHS"];
+    return this.fetch("LD_RUNPATH_SEARCH_PATHS");
   }
 
   public get linkTarget(): string {
-    return `${this._defn["NATIVE_ARCH"]}-${this._defn["LLVM_TARGET_TRIPLE_VENDOR"]}-${this._defn["LLVM_TARGET_TRIPLE_OS_VERSION"]}${this._defn["LLVM_TARGET_TRIPLE_SUFFIX"]}`;
+    return `${this.fetch("NATIVE_ARCH")}-${this.fetch(
+      "LLVM_TARGET_TRIPLE_VENDOR"
+    )}-${this.fetch("LLVM_TARGET_TRIPLE_OS_VERSION")}${
+      this.fetch("LLVM_TARGET_TRIPLE_SUFFIX") || "" // Builds targeting "any" have no suffix, simulator builds for example do.
+    }`;
   }
 
   public get marketingVersion(): string {
-    return this._defn["MARKETING_VERSION"];
+    return this.fetch("MARKETING_VERSION");
   }
 
   public get astPath(): string {
-    return `${this._defn["NATIVE_ARCH"]}-${this._defn["LLVM_TARGET_TRIPLE_VENDOR"]}-${this._defn["LLVM_TARGET_TRIPLE_OS_VERSION"]}${this._defn["LLVM_TARGET_TRIPLE_SUFFIX"]}`;
+    return `${this.fetch("NATIVE_ARCH")}-${this.fetch(
+      "LLVM_TARGET_TRIPLE_VENDOR"
+    )}-${this.fetch("LLVM_TARGET_TRIPLE_OS_VERSION")}${this.fetch(
+      "LLVM_TARGET_TRIPLE_SUFFIX"
+    )}`;
   }
 
   public get targetName(): string {
-    return this._defn["TARGET_NAME"];
+    return this.fetch("TARGET_NAME");
   }
 
   public get unlocalizedResourcesFolderPath(): string {
-    return this._defn["UNLOCALIZED_RESOURCES_FOLDER_PATH"];
+    return this.fetch("UNLOCALIZED_RESOURCES_FOLDER_PATH");
   }
 
-  public targetBuildDir(buildDir: string): string {
-    return path.join(
-      buildDir,
-      this._defn["TARGET_BUILD_DIR"].match(/Products\/.*/)[0]
-    );
+  public get targetBuildDir(): string {
+    return this.fetch("TARGET_BUILD_DIR");
   }
 
-  public frameworkPath(buildDir: string): string {
-    return path.join(
-      this.targetBuildDir(buildDir),
-      this._defn["CONTENTS_FOLDER_PATH"]
-    );
+  public get fatFrameworkPath(): string {
+    return path.join(this.targetBuildDir, this.fetch("EXECUTABLE_PATH"));
+  }
+
+  public get fatFrameworkDirPath(): string {
+    return path.join(this.targetBuildDir, this.fetch("EXECUTABLE_FOLDER_PATH"));
+  }
+
+  public get executableFolderPath(): string {
+    return this.fetch("EXECUTABLE_FOLDER_PATH");
   }
 }
 

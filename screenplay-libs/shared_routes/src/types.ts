@@ -3,8 +3,9 @@ import * as t from "retype";
 export type TRoute = {
   url: string;
   response?: { [key: string]: t.Schema<unknown> };
-  urlParams?: { [key: string]: t.Schema<unknown> };
-  queryParams?: { [key: string]: t.Schema<unknown> };
+  urlParams?: { [key: string]: t.Schema<string> };
+  // queryParams can ONLY encode strings, everything else needs to be serialized first
+  queryParams?: { [key: string]: t.Schema<string | undefined> };
 } & (
   | ({
       method: "POST" | "PATCH" | "DELETE" | "PUT";

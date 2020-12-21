@@ -29,6 +29,9 @@ const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 class BuildSettings {
     constructor(defn) {
+        if (!defn["TARGET_BUILD_DIR"]) {
+            throw new Error(`Build settings missing value for TARGET_BUILD_DIR, xcodebuild call likely failed before completing`);
+        }
         this._defn = defn;
     }
     static loadFromFile(filePath) {
@@ -55,26 +58,119 @@ class BuildSettings {
         return value.replace(/\$(\(([^)]+)\)|\{([^}]+)\})/g, (match, _, parenSetting, bracketSetting) => {
             const setting = parenSetting || bracketSetting;
             const tokens = setting.split(":");
-            let value = this.get(tokens.shift());
+            let value = this.fetchOrUndefined(tokens.shift()) || "";
             for (let token of tokens) {
                 value = this.applyOperation(token, value);
             }
             return value;
         });
     }
-    buildProductsDir(baseDir) {
-        const buildProductsDir = this._defn["BUILT_PRODUCTS_DIR"];
-        if (!buildProductsDir) {
-            throw new Error(`buildSettings must include BUILT_PRODUCTS_DIR`);
+    fetch(key) {
+        const value = this._defn[key];
+        if (!value) {
+            throw new Error(`No value for "${key}" found in build settings`);
         }
-        const productsPathMatches = buildProductsDir.match(/Build\/Products\/.*/);
-        if (!productsPathMatches) {
-            throw new Error(`unable to extract path from BUILT_PRODUCTS_DIR = ${buildProductsDir}`);
-        }
-        return path.join(baseDir, productsPathMatches[0]);
+        return value;
     }
-    getFrameworkPath(buildPath) {
-        return path.join(this.buildProductsDir(buildPath), this._defn["CONTENTS_FOLDER_PATH"]);
+    fetchOrUndefined(key) {
+        return this._defn[key];
+    }
+    get objectFilesDir() {
+        return this.fetch("OBJECT_FILE_DIR_normal");
+    }
+    get installName() {
+        return `@rpath/${this.fetch("CONTENTS_FOLDER_PATH")}/${this.executableName}`;
+    }
+    get tempDir() {
+        return this.fetch("TEMP_DIR");
+    }
+    get infoplistFile() {
+        return this.fetch("INFOPLIST_FILE");
+    }
+    get entitlementsFile() {
+        return this.fetchOrUndefined("CODE_SIGN_ENTITLEMENTS");
+    }
+    get srcRoot() {
+        return this.fetch("SRCROOT");
+    }
+    get executableName() {
+        return this.fetch("EXECUTABLE_NAME");
+    }
+    get configuration() {
+        return this.fetch("CONFIGURATION");
+    }
+    get screenplaySemVer() {
+        return this.fetch("SCREENPLAY_SEMVER");
+    }
+    get productModuleName() {
+        return this.fetch("PRODUCT_MODULE_NAME");
+    }
+    get unversionedProductModuleName() {
+        try {
+            return this.productModuleName.match(/(.*)_v(\d|undefined)/)[1];
+        }
+        catch (err) {
+            console.error(`Failed to extract unversioned product module from ${this.productModuleName}`);
+            throw err;
+        }
+    }
+    get executablePath() {
+        return this.fetch("EXECUTABLE_PATH");
+    }
+    get archs() {
+        return this.fetch("ARCHS");
+    }
+    get sdkRoot() {
+        return this.fetch("SDKROOT");
+    }
+    get sdkVersion() {
+        return this.fetch("SDK_VERSION");
+    }
+    get correspondingDeviceSDKDir() {
+        return this.fetch("CORRESPONDING_DEVICE_SDK_DIR");
+    }
+    get librarySearchPaths() {
+        return this.fetch("LIBRARY_SEARCH_PATHS");
+    }
+    get testLibrarySearchPaths() {
+        return this.fetch("TEST_LIBRARY_SEARCH_PATHS");
+    }
+    get frameworkSearchPaths() {
+        return this.fetch("FRAMEWORK_SEARCH_PATHS");
+    }
+    get testFrameworkSearchPaths() {
+        return this.fetch("TEST_FRAMEWORK_SEARCH_PATHS");
+    }
+    get ldRunpathSearchPaths() {
+        return this.fetch("LD_RUNPATH_SEARCH_PATHS");
+    }
+    get linkTarget() {
+        return `${this.fetch("NATIVE_ARCH")}-${this.fetch("LLVM_TARGET_TRIPLE_VENDOR")}-${this.fetch("LLVM_TARGET_TRIPLE_OS_VERSION")}${this.fetch("LLVM_TARGET_TRIPLE_SUFFIX") || "" // Builds targeting "any" have no suffix, simulator builds for example do.
+        }`;
+    }
+    get marketingVersion() {
+        return this.fetch("MARKETING_VERSION");
+    }
+    get astPath() {
+        return `${this.fetch("NATIVE_ARCH")}-${this.fetch("LLVM_TARGET_TRIPLE_VENDOR")}-${this.fetch("LLVM_TARGET_TRIPLE_OS_VERSION")}${this.fetch("LLVM_TARGET_TRIPLE_SUFFIX")}`;
+    }
+    get targetName() {
+        return this.fetch("TARGET_NAME");
+    }
+    get unlocalizedResourcesFolderPath() {
+        return this.fetch("UNLOCALIZED_RESOURCES_FOLDER_PATH");
+    }
+    get targetBuildDir() {
+        return this.fetch("TARGET_BUILD_DIR");
+    }
+    get fatFrameworkPath() {
+        return path.join(this.targetBuildDir, this.fetch("EXECUTABLE_PATH"));
+    }
+    get fatFrameworkDirPath() {
+        return path.join(this.targetBuildDir, this.fetch("EXECUTABLE_FOLDER_PATH"));
+    }
+    get executableFolderPath() {
+        return this.fetch("EXECUTABLE_FOLDER_PATH");
     }
 }
 exports.default = BuildSettings;

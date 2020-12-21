@@ -81,10 +81,16 @@ export default class PBXFileReference extends PBXObject {
     return this._defn["path"];
   }
 
-  fullPath(): string {
+  fullPath(returnNullIfNotExists?: false): string;
+  fullPath(returnNullIfNotExists: true): string | null;
+  fullPath(returnNullIfNotExists?: boolean): string | null {
     const parents = findParents(this._id, this._proj.rootObject().mainGroup());
 
     if (parents === null) {
+      if (returnNullIfNotExists) {
+        return null;
+      }
+
       throw (
         "Xcodejs ERROR! Child (" + this._id + ") could not be found in tree!"
       );

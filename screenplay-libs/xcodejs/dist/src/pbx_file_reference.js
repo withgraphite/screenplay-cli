@@ -39,9 +39,12 @@ class PBXFileReference extends pbx_object_1.default {
     path() {
         return this._defn["path"];
     }
-    fullPath() {
+    fullPath(returnNullIfNotExists) {
         const parents = findParents(this._id, this._proj.rootObject().mainGroup());
         if (parents === null) {
+            if (returnNullIfNotExists) {
+                return null;
+            }
             throw ("Xcodejs ERROR! Child (" + this._id + ") could not be found in tree!");
         }
         // TODO this assumes relative paths up the tree

@@ -1,78 +1,95 @@
-#! /usr/bin/env ts-node
+#!/usr/bin/env node
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const chalk_1 = __importDefault(require("chalk"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
+const os_1 = __importDefault(require("os"));
 const path_1 = __importDefault(require("path"));
 const shared_routes_1 = require("shared-routes");
 const xcodejs_1 = require("xcodejs");
-const xml_js_1 = __importDefault(require("xml-js"));
 const yargs_1 = __importDefault(require("yargs"));
+const api_1 = require("./lib/api");
 const utils_1 = require("./utils");
-const API_SERVER = process.env.NODE_ENV === "development"
-    ? "http://localhost:8000/v1"
-    : "https://api.screenplay.dev/v1";
 // TODO: This feels super rickety, basically relies on knowledge of framework name and that no variables or $(...) commands are included
 // Also note: I think this might be wrong - right now we pull frameworks from the bulid products dir, but we may want to first copy frameworks (codesign on copy) and THEN copy it so we have codesigning (but that assumes we won't update codesigning...)
-function generate_build_phase_script(frameworkName) {
-    const SCREENPLAY_SERVER_ENDPOINT = `${API_SERVER}${shared_routes_1.api.scripts.buildPhaseDownloader.url}?apiKey=123`;
+function generateBuildPhaseScript() {
+    const SCREENPLAY_BUILD_PHASE_DOWNLOADER = `${api_1.endpointWithArgs(shared_routes_1.api.scripts.buildPhaseDownloader, {}, { appSecret: "__REPLACE_ME__" }).replace("__REPLACE_ME__", "$SCREENPLAY_APP_KEY")}`;
     return [
-        `curl -o /dev/null -sfI "${SCREENPLAY_SERVER_ENDPOINT}"`,
-        `&& curl -s "${SCREENPLAY_SERVER_ENDPOINT}"`,
+        `curl -o /dev/null -sfI "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}"`,
+        `&& curl -s "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}"`,
         `| bash -s --`,
-        `--framework "$BUILT_PRODUCTS_DIR"/"${frameworkName}.v$MARKETING_VERSION.framework"`,
-        `--source "$PROJECT_FILE_PATH"/project.pbxproj`,
-        `--destination "$CODESIGNING_FOLDER_PATH"`,
-        `--cpuArch "$ARCHS"`,
-        `--sdk "$SDK_NAME"`,
-        `--targetName "$TARGETNAME"`,
-        `--codeSignIdentity "$CODE_SIGN_IDENTITY"`,
-        `--codeSignEntitlements "$PROJECT_DIR/$CODE_SIGN_ENTITLEMENTS"`,
-        `--groupIdPrefixHACK "$GROUP_ID_PREFIX"`,
-        `--infoPlistFile "$INFOPLIST_FILE"`,
+        `1>&2`,
         `|| (echo "error: Failed to download and execute Screenplay build script." && exit 1)`,
     ].join(" ");
 }
-function recursivelyMutateBuildRefs(defn, buildableName, blueprintName, blueprintIdentifier, originalBlueprintIdentifier) {
-    Object.keys(defn).forEach((key) => {
-        if (key === "_attributes" || key === "_declaration") {
-            return;
-        }
-        else if (key === "BuildableReference") {
-            const attributes = defn["BuildableReference"]["_attributes"];
-            if (attributes["BlueprintIdentifier"] === originalBlueprintIdentifier) {
-                attributes["BlueprintIdentifier"] = blueprintIdentifier;
-                attributes["BuildableName"] = buildableName;
-                attributes["BlueprintName"] = blueprintName;
-            }
-        }
-        else {
-            const value = defn[key];
-            if (value instanceof Array) {
-                value.forEach((innerValue) => {
-                    recursivelyMutateBuildRefs(innerValue, buildableName, blueprintName, blueprintIdentifier, originalBlueprintIdentifier);
-                });
-            }
-            else if (value instanceof Object) {
-                recursivelyMutateBuildRefs(value, buildableName, blueprintName, blueprintIdentifier, originalBlueprintIdentifier);
-            }
-            else {
-                utils_1.error("Unknown literal found in xcscheme parse");
-            }
-        }
-    });
+function generateVersionBundleScript(scheme, destination, workspace) {
+    return [
+        `${process.env.GITHUB_WORKSPACE
+            ? process.env.GITHUB_WORKSPACE
+            : path_1.default.join(os_1.default.homedir(), "monologue")}/build-phase/dist/build-phase.pkg`,
+        `build-version-bundle`,
+        `--scheme ${scheme}`,
+        `--destination ${destination}`,
+        workspace ? `--workspace ${workspace}` : "",
+    ].join(" ");
 }
-function addScreenplayBuildPhase(xcodeProject, frameworkName) {
+function addScreenplayIconPhase(xcodeProjectPath, xcodeProject) {
+    const iconDir = path_1.default.join(xcodeProjectPath, "../Screenplay/screenplay-icons.xcassets");
+    fs_extra_1.default.mkdirpSync(iconDir);
+    fs_extra_1.default.copySync(path_1.default.join(__dirname, "../assets/screenplay-icons.xcassets"), iconDir);
+    const fileId = xcodejs_1.Utils.generateUUID(xcodeProject.allObjectKeys());
+    xcodeProject._defn["objects"][fileId] = {
+        isa: "PBXFileReference",
+        lastKnownFileType: "folder.assetcatalog",
+        path: "screenplay-icons.xcassets",
+        sourceTree: "<group>",
+    };
+    const folderId = xcodejs_1.Utils.generateUUID(xcodeProject.allObjectKeys());
+    xcodeProject._defn["objects"][folderId] = {
+        isa: "PBXGroup",
+        children: [fileId],
+        path: "Screenplay",
+        sourceTree: "<group>",
+    };
+    xcodeProject
+        .rootObject()
+        .mainGroup()
+        .addChild(new xcodejs_1.PBXGroup(folderId, xcodeProject));
+    const buildPhaseFileId = xcodejs_1.Utils.generateUUID(xcodeProject.allObjectKeys());
+    xcodeProject._defn["objects"][buildPhaseFileId] = {
+        isa: "PBXBuildFile",
+        fileRef: fileId,
+    };
+    const buildPhaseId = xcodejs_1.Utils.generateUUID(xcodeProject.allObjectKeys());
+    xcodeProject._defn["objects"][buildPhaseId] = {
+        isa: "PBXResourcesBuildPhase",
+        buildActionMask: "2147483647",
+        runOnlyForDeploymentPostprocessing: "0",
+        files: [buildPhaseFileId],
+    };
+    return buildPhaseId;
+}
+function addScreenplayBuildPhase(xcodeProject, shellScript) {
     const buildPhaseId = xcodejs_1.Utils.generateUUID(xcodeProject.allObjectKeys());
     xcodeProject._defn["objects"][buildPhaseId] = {
         isa: "PBXShellScriptBuildPhase",
-        buildActionMask: 2147483647,
+        buildActionMask: "2147483647",
         name: "Run Script: Generate Screenplay Project",
-        runOnlyForDeploymentPostprocessing: 0,
+        runOnlyForDeploymentPostprocessing: "0",
         shellPath: "/bin/sh",
-        shellScript: generate_build_phase_script(frameworkName),
+        shellScript: shellScript,
     };
     return buildPhaseId;
 }
@@ -81,89 +98,142 @@ function addScreenplayBuildProduct(xcodeProject, appTarget) {
     xcodeProject._defn["objects"][buildProductId] = {
         isa: "PBXFileReference",
         explicitFileType: "wrapper.application",
-        includeInIndex: 0,
+        includeInIndex: "0",
         path: `Screenplay-${appTarget.name()}.app`,
         sourceTree: "BUILT_PRODUCTS_DIR",
     };
     const productRefGroupId = xcodeProject.rootObject()._defn["productRefGroup"];
-    // Note: The next line isn't entirely correct, technically the product could be put ANYWHERE
     xcodeProject._defn["objects"][productRefGroupId]["children"].push(buildProductId);
     return buildProductId;
 }
-function addScreenplayBuildDependencyTargetProxy(xcodeProject, frameworkTarget) {
-    const buildDependencyTargetProxyId = xcodejs_1.Utils.generateUUID(xcodeProject.allObjectKeys());
-    xcodeProject._defn["objects"][buildDependencyTargetProxyId] = {
-        isa: "PBXContainerItemProxy",
-        containerPortal: xcodeProject.rootObject()._id,
-        proxyType: 1,
-        remoteGlobalIDString: frameworkTarget._id,
-        remoteInfo: frameworkTarget._defn["name"],
-    };
-    return buildDependencyTargetProxyId;
-}
-function addScreenplayBuildDependency(xcodeProject, frameworkTarget, buildDependencyTargetProxyId) {
-    const buildDependencyId = xcodejs_1.Utils.generateUUID(xcodeProject.allObjectKeys());
-    xcodeProject._defn["objects"][buildDependencyId] = {
-        isa: "PBXTargetDependency",
-        target: frameworkTarget._id,
-        targetProxy: buildDependencyTargetProxyId,
-    };
-    return buildDependencyId;
-}
-function addScreenplayAppTarget(xcodeProject, frameworkTarget, appTarget) {
-    const buildPhaseId = addScreenplayBuildPhase(xcodeProject, 
-    // TODO: This is unreliable. What if the name includes env vars specific to the target?
-    frameworkTarget._defn["name"]);
-    const buildProductId = addScreenplayBuildProduct(xcodeProject, appTarget);
-    const buildDependencyTargetProxyId = addScreenplayBuildDependencyTargetProxy(xcodeProject, frameworkTarget);
-    const buildDependencyId = addScreenplayBuildDependency(xcodeProject, frameworkTarget, buildDependencyTargetProxyId);
-    const duplicatedBuildConfigListId = xcodeProject.deepDuplicate(appTarget.buildConfigurationList()._id);
-    const duplicatedBuildConfigList = new xcodejs_1.PBXBuildConfigList(duplicatedBuildConfigListId, xcodeProject);
+function addScreenplayVersionBundleTarget(opts) {
+    const buildPhaseId = addScreenplayBuildPhase(opts.xcodeProject, generateVersionBundleScript(opts.appScheme, opts.destination, opts.workspacePath));
+    const buildProductId = addScreenplayBuildProduct(opts.xcodeProject, opts.appTarget);
+    const duplicatedBuildConfigListId = opts.xcodeProject.deepDuplicate(opts.appTarget.buildConfigurationList()._id);
+    const duplicatedBuildConfigList = new xcodejs_1.PBXBuildConfigList(duplicatedBuildConfigListId, opts.xcodeProject);
     duplicatedBuildConfigList.buildConfigs().forEach((buildConfig) => {
         // If we embed the swift std lib, then xcode tries to use source maps to find the file we built
         // the app from (my guess is to try and determine which features to include). B/c that source file
         // doesn't exist (as it was built in intercut), we're just going to turn this off
         buildConfig.buildSettings()["ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES"] = "NO";
+        // We don't need this project to generate a plist because we generate it for them as part of the
+        // build phase - alterantively we could set:
+        // DONT_GENERATE_INFOPLIST_FILE = YES
+        // INFOPLIST_FILE = ""
+        // But there is some tech debt where we use the INFOPLIST_FILE variable elsewhere (when we should
+        // grab the infoplist from the framework build settings instead); until we clean that up, we can
+        // take this approach instead
+        buildConfig.buildSettings()["INFOPLIST_PREPROCESS"] = "NO";
+        buildConfig.buildSettings()["INFOPLIST_PREFIX_HEADER"] = undefined;
+        // Some people *Cough, wikipedia, Cough* choose to overwrite this with a const - which causes problems
+        // for us when we try and build the project b/c both the Wikipedia target and the Screenplay-Wikipedia
+        // target produce "Wikipedia.app" and xcode needs product names to be unique in order to infer deps
+        // (Otherwise if someone wants to build "Wikipedia.app" then xcode has no idea which to build)
+        buildConfig.buildSettings()["PRODUCT_NAME"] = "$(TARGET_NAME)";
+        buildConfig.buildSettings()["SCREENPLAY_SCHEME"] = opts.appScheme;
+        buildConfig.buildSettings()["SCREENPLAY_INCLUDED_VERSIONS"] = "latest";
+        if (opts.workspacePath) {
+            buildConfig.buildSettings()["SCREENPLAY_WORKSPACE"] = opts.workspacePath;
+        }
     });
-    const buildTargetId = xcodejs_1.Utils.generateUUID(xcodeProject.allObjectKeys());
-    xcodeProject._defn["objects"][buildTargetId] = {
+    const buildTargetId = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+    opts.xcodeProject._defn["objects"][buildTargetId] = {
         isa: "PBXNativeTarget",
         buildConfigurationList: duplicatedBuildConfigListId,
         buildPhases: [buildPhaseId],
         buildRules: [],
-        dependencies: [buildDependencyId],
-        name: `Screenplay-${appTarget.name()}`,
-        productName: `Screenplay-${appTarget.name()}`,
+        name: `Screenplay-${opts.appTarget.name()}`,
+        productName: `Screenplay-${opts.appTarget.name()}`,
         productReference: buildProductId,
         productType: "com.apple.product-type.application",
     };
-    xcodeProject.rootObject()._defn["targets"].push(buildTargetId);
-    return buildTargetId;
+    opts.xcodeProject.rootObject()._defn["targets"].push(buildTargetId);
+    return new xcodejs_1.PBXNativeTarget(buildTargetId, opts.xcodeProject);
 }
-function createFrameworkTargetFromAppTarget(xcodeProject, appTarget) {
-    const frameworkTarget = xcodeProject.duplicateTargetAndBuildSettings(appTarget);
-    frameworkTarget._defn["name"] = `Screenplay-Framework-${frameworkTarget._defn["name"]}`;
-    frameworkTarget._defn["productName"] = `Screenplay-Framework-${frameworkTarget._defn["productName"]}`;
-    frameworkTarget._defn["productType"] = "com.apple.product-type.framework";
-    frameworkTarget.product()._defn["explicitFileType"] = "wrapper.framework";
-    frameworkTarget
-        .buildConfigurationList()
-        .buildConfigs()
-        .forEach((buildConfig, index) => {
-        const buildSettings = buildConfig.buildSettings();
-        buildSettings["PRODUCT_NAME"] = frameworkTarget._defn["productName"];
-        buildSettings["DYLIB_INSTALL_NAME_BASE"] = "@rpath";
-        buildSettings["LD_RUNPATH_SEARCH_PATHS"] = [
-            "$(inherited)",
-            "@executable_path/Frameworks",
-            "@executable_path/Frameworks/$(CONTENTS_FOLDER_PATH)/Frameworks",
+function addScreenplayAppTarget(opts) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Swap new app token for app secret
+        const [buildSetting, returnedAppTarget,] = xcodejs_1.getBuildSettingsAndTargetNameFromTarget(opts.xcodeProjectPath, opts.appTarget.name(), {});
+        if (opts.appTarget.name() !== returnedAppTarget ||
+            opts.xcodeProject
+                .rootObject()
+                .targets()
+                .filter((target) => {
+                return target.name() === returnedAppTarget;
+            }).length > 1) {
+            console.log("Error! Many targets with the same name detected");
+            process.exit(1);
+        }
+        const name = opts.xcodeProject.extractAppName(buildSetting);
+        if (name === null) {
+            console.log("Error! Could not infer name");
+            process.exit(1);
+        }
+        let appSecret = opts.appToken;
+        let appId = null;
+        if (opts.newAppToken) {
+            const appSecretRequest = yield api_1.requestWithArgs(shared_routes_1.api.apps.create, {
+                name: name,
+            }, {}, {
+                newAppToken: opts.newAppToken,
+            });
+            appSecret = appSecretRequest.appSecret;
+            appId = appSecretRequest.id;
+            const icon = opts.xcodeProject.extractMarketingAppIcon(buildSetting, opts.appTarget);
+            if (icon) {
+                yield api_1.requestWithArgs(shared_routes_1.api.apps.updateAppIcon, fs_extra_1.default.readFileSync(icon), {}, { appSecret: appSecretRequest.appSecret });
+            }
+        }
+        const assetIconPhaseId = addScreenplayIconPhase(opts.xcodeProjectPath, opts.xcodeProject);
+        const buildPhaseId = addScreenplayBuildPhase(opts.xcodeProject, generateBuildPhaseScript());
+        const buildProductId = addScreenplayBuildProduct(opts.xcodeProject, opts.appTarget);
+        const duplicatedBuildConfigListId = opts.xcodeProject.deepDuplicate(opts.appTarget.buildConfigurationList()._id);
+        const duplicatedBuildConfigList = new xcodejs_1.PBXBuildConfigList(duplicatedBuildConfigListId, opts.xcodeProject);
+        duplicatedBuildConfigList.buildConfigs().forEach((buildConfig) => {
+            // If we embed the swift std lib, then xcode tries to use source maps to find the file we built
+            // the app from (my guess is to try and determine which features to include). B/c that source file
+            // doesn't exist (as it was built in intercut), we're just going to turn this off
+            buildConfig.buildSettings()["ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES"] = "NO";
+            // We don't need this project to generate a plist because we generate it for them as part of the
+            // build phase - alterantively we could set:
+            // DONT_GENERATE_INFOPLIST_FILE = YES
+            // INFOPLIST_FILE = ""
+            // But there is some tech debt where we use the INFOPLIST_FILE variable elsewhere (when we should
+            // grab the infoplist from the framework build settings instead); until we clean that up, we can
+            // take this approach instead
+            buildConfig.buildSettings()["INFOPLIST_PREPROCESS"] = "NO";
+            buildConfig.buildSettings()["INFOPLIST_PREFIX_HEADER"] = undefined;
+            // Some people *Cough, wikipedia, Cough* choose to overwrite this with a const - which causes problems
+            // for us when we try and build the project b/c both the Wikipedia target and the Screenplay-Wikipedia
+            // target produce "Wikipedia.app" and xcode needs product names to be unique in order to infer deps
+            // (Otherwise if someone wants to build "Wikipedia.app" then xcode has no idea which to build)
+            buildConfig.buildSettings()["PRODUCT_NAME"] = "$(TARGET_NAME)";
+            // For the dummy Screenplay icon we put in place
+            buildConfig.buildSettings()["ASSETCATALOG_COMPILER_APPICON_NAME"] =
+                "AppIcon";
+            buildConfig.buildSettings()["SCREENPLAY_APP_KEY"] = appSecret;
+            buildConfig.buildSettings()["SCREENPLAY_SCHEME"] = opts.appScheme;
+            if (opts.workspacePath) {
+                buildConfig.buildSettings()["SCREENPLAY_WORKSPACE"] = opts.workspacePath;
+            }
+        });
+        const buildTargetId = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+        opts.xcodeProject._defn["objects"][buildTargetId] = {
+            isa: "PBXNativeTarget",
+            buildConfigurationList: duplicatedBuildConfigListId,
+            buildPhases: [assetIconPhaseId, buildPhaseId],
+            buildRules: [],
+            name: `Screenplay-${opts.appTarget.name()}`,
+            productName: `Screenplay-${opts.appTarget.name()}`,
+            productReference: buildProductId,
+            productType: "com.apple.product-type.application",
+        };
+        opts.xcodeProject.rootObject()._defn["targets"].push(buildTargetId);
+        return [
+            appId,
+            new xcodejs_1.PBXNativeTarget(buildTargetId, opts.xcodeProject),
         ];
-        // TODO: The marketing version can't go in the name (presumably b/c it's not a build setting). That indicates this might be a bad control plane.
-        buildSettings["WRAPPER_EXTENSION"] = "v$(MARKETING_VERSION).framework";
-        buildSettings["PRODUCT_NAME"] = "$(TARGET_NAME)"; // Some people *Cough, wikipedia, Cough* choose to overwrite this - which causes problems for us when we try and copy what we believe to be the correct dir to intercut
-        buildSettings["PRODUCT_BUNDLE_IDENTIFIER"] = `${buildSettings["PRODUCT_BUNDLE_IDENTIFIER"]}.v$(MARKETING_VERSION)`;
     });
-    return frameworkTarget;
 }
 function removeScreenplayManagedTargetsAndProducts(xcodeProject) {
     xcodeProject
@@ -173,7 +243,16 @@ function removeScreenplayManagedTargetsAndProducts(xcodeProject) {
         // TODO: At some point we should update this heuristic
         // (Maybe check a custom build setting or something)
         if (target.name().startsWith("Screenplay-")) {
-            // should remove those once it realizes they're not attached to anything
+            target
+                .buildConfigurationList()
+                .buildConfigs()
+                .forEach((config) => {
+                config.remove();
+            });
+            target.buildConfigurationList().remove();
+            target.buildPhases().forEach((bp) => {
+                bp.remove();
+            });
             const product = target.product();
             const productRefGroupId = xcodeProject.rootObject()._defn["productRefGroup"];
             xcodeProject._defn["objects"][productRefGroupId]["children"] = xcodeProject._defn["objects"][productRefGroupId]["children"].filter((productId) => {
@@ -185,9 +264,33 @@ function removeScreenplayManagedTargetsAndProducts(xcodeProject) {
                 ._defn["targets"].filter((targetId) => {
                 return targetId !== target._id;
             });
-            // This leaves a whole lot of dangling keys (such as buildConfigs) but xcode
             target.remove();
         }
+    });
+}
+function extractScreenplayReinstallDetails(xcodeProjectPath, xcodeProject) {
+    return xcodeProject
+        .rootObject()
+        .targets()
+        .filter((target) => {
+        // TODO: At some point we should update this heuristic
+        // (Maybe check a custom build setting or something)
+        return target.name().startsWith("Screenplay-");
+    })
+        .map((target) => {
+        const settings = target
+            .buildConfigurationList()
+            .buildConfigs()[0]
+            .buildSettings();
+        return {
+            "xcode-project": xcodeProjectPath,
+            "app-target": target.name().slice("Screenplay-".length),
+            "app-scheme": settings["SCREENPLAY_SCHEME"],
+            workspace: settings["SCREENPLAY_WORKSPACE"],
+            "with-tests": false,
+            key: undefined,
+            appToken: settings["SCREENPLAY_APP_KEY"],
+        };
     });
 }
 function extractTarget(targets, targetName) {
@@ -198,11 +301,13 @@ function extractTarget(targets, targetName) {
         return targets[0];
     }
     else {
-        const target = targets.find((t) => {
-            return t.name() === targetName;
-        });
-        if (target) {
-            return target;
+        if (targetName) {
+            const target = targets.find((t) => {
+                return t.name() === targetName;
+            });
+            if (target) {
+                return target;
+            }
         }
         utils_1.error(`More than one app target detected, please specify one with the --app-target flag. (Potential app targets: ${targets.map((t) => {
             return `"${t.name()}"`;
@@ -215,50 +320,369 @@ function readProject(projectPath) {
     }
     return xcodejs_1.PBXProject.readFileSync(path_1.default.join(projectPath, "project.pbxproj"));
 }
-function createSchema(projectPath, appTarget, buildTargetId) {
-    const schemesFolder = path_1.default.join(projectPath, "xcshareddata", "xcschemes");
-    if (fs_extra_1.default.existsSync(schemesFolder)) {
-        const appSchemePath = path_1.default.join(schemesFolder, appTarget.name() + ".xcscheme");
-        if (fs_extra_1.default.existsSync(appSchemePath)) {
-            const data = fs_extra_1.default.readFileSync(appSchemePath);
-            const defn = xml_js_1.default.xml2js(data.toString(), { compact: true });
-            recursivelyMutateBuildRefs(defn, `Screenplay-${appTarget.name()}.app`, `Screenplay-${appTarget.name()}`, buildTargetId, appTarget._id);
-            fs_extra_1.default.writeFileSync(path_1.default.join(schemesFolder, `Screenplay-${appTarget.name()}.xcscheme`), xml_js_1.default.js2xml(defn, { compact: true }));
-        }
-        else {
-            utils_1.warn(`XCSchemes found but could not find a scheme for the app target ("${appTarget.name()}")`);
-        }
+function addTests(opts) {
+    // Copy files
+    const uiTestDir = path_1.default.join(opts.projectPath, "../ScreenplayUITests");
+    fs_extra_1.default.mkdirSync(uiTestDir);
+    fs_extra_1.default.copySync(path_1.default.join(__dirname, "../assets/ui_test_src"), uiTestDir);
+    // Add files
+    const codeSourceId = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+    opts.xcodeProject._defn["objects"][codeSourceId] = {
+        path: "ScreenplayUITests.m",
+        isa: "PBXFileReference",
+        lastKnownFileType: "sourcecode.c.objc",
+        sourceTree: "<group>",
+    };
+    const plistId = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+    opts.xcodeProject._defn["objects"][plistId] = {
+        path: "Info.plist",
+        isa: "PBXFileReference",
+        lastKnownFileType: "text.plist.xml",
+        sourceTree: "<group>",
+    };
+    // Add group
+    const group = opts.xcodeProject.createGroup("ScreenplayUITests");
+    opts.xcodeProject.rootObject().mainGroup().addChild(group);
+    group.addChildren([
+        new xcodejs_1.PBXFileReference(plistId, opts.xcodeProject),
+        new xcodejs_1.PBXFileReference(codeSourceId, opts.xcodeProject),
+    ]);
+    // Add product
+    const xcTestId = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+    opts.xcodeProject._defn["objects"][xcTestId] = {
+        path: "ScreenplayUITests.xctest",
+        isa: "PBXFileReference",
+        includeInIndex: "0",
+        explicitFileType: "wrapper.cfbundle",
+        sourceTree: "BUILT_PRODUCTS_DIR",
+    };
+    const productRefGroupId = opts.xcodeProject.rootObject()._defn["productRefGroup"];
+    opts.xcodeProject._defn["objects"][productRefGroupId]["children"].push(xcTestId);
+    // Add target
+    const buildFileId = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+    opts.xcodeProject._defn["objects"][buildFileId] = {
+        isa: "PBXBuildFile",
+        fileRef: codeSourceId,
+    };
+    const sourcesBuildPhaseId = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+    opts.xcodeProject._defn["objects"][sourcesBuildPhaseId] = {
+        isa: "PBXSourcesBuildPhase",
+        buildActionMask: "2147483647",
+        files: [buildFileId],
+        runOnlyForDeploymentPostprocessing: "0",
+    };
+    const testBuildConfigIds = opts.xcodeProject
+        .rootObject()
+        .buildConfigurationList()
+        .buildConfigs()
+        .map((buildConfig) => {
+        const copyBuildConfigId = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+        opts.xcodeProject._defn["objects"][copyBuildConfigId] = {
+            isa: "XCBuildConfiguration",
+            buildSettings: {
+                CLANG_MODULES_AUTOLINK: "YES",
+                // without this line, we can't run the tests from the CLI
+                DEVELOPMENT_TEAM: "6V5LDB8335",
+                LD_RUNPATH_SEARCH_PATHS: [
+                    "$(inherited)",
+                    "@executable_path/Frameworks",
+                    "@loader_path/Frameworks",
+                ],
+                INFOPLIST_FILE: "ScreenplayUITests/Info.plist",
+                CODE_SIGN_STYLE: "Automatic",
+                PRODUCT_BUNDLE_IDENTIFIER: "dev.screenplay.ScreenplayUITests",
+                ONLY_ACTIVE_ARCH: "false",
+                TEST_TARGET_NAME: opts.appTarget.name(),
+                TARGETED_DEVICE_FAMILY: "1,2",
+                PRODUCT_NAME: "$(TARGET_NAME)",
+                OTHER_LDFLAGS: "",
+                INFOPLIST_PREPROCESS: "NO",
+                INFOPLIST_PREFIX_HEADER: "",
+            },
+            name: buildConfig.name(),
+        };
+        return copyBuildConfigId;
+    });
+    const buildConfigList = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+    opts.xcodeProject._defn["objects"][buildConfigList] = {
+        isa: "XCConfigurationList",
+        defaultConfigurationIsVisible: "0",
+        defaultConfigurationName: opts.xcodeProject
+            .rootObject()
+            .buildConfigurationList()
+            .defaultConfigurationName(),
+        buildConfigurations: testBuildConfigIds,
+    };
+    const containerItemProxy = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+    opts.xcodeProject._defn["objects"][containerItemProxy] = {
+        isa: "PBXContainerItemProxy",
+        containerPortal: opts.xcodeProject.rootObject()._id,
+        proxyType: "1",
+        remoteGlobalIDString: opts.appTarget._id,
+        remoteInfo: opts.appTarget.name(),
+    };
+    const appTargetDependency = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+    opts.xcodeProject._defn["objects"][appTargetDependency] = {
+        isa: "PBXTargetDependency",
+        target: opts.appTarget._id,
+        targetProxy: containerItemProxy,
+    };
+    const nativeTargetID = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+    opts.xcodeProject._defn["objects"][nativeTargetID] = {
+        buildConfigurationList: buildConfigList,
+        productReference: xcTestId,
+        productType: "com.apple.product-type.bundle.ui-testing",
+        productName: "ScreenplayUITests",
+        isa: "PBXNativeTarget",
+        buildPhases: [sourcesBuildPhaseId],
+        dependencies: [appTargetDependency],
+        name: "ScreenplayUITests",
+        buildRules: [],
+    };
+    opts.xcodeProject.rootObject()._defn["targets"].push(nativeTargetID);
+    if (!opts.xcodeProject.rootObject()._defn["attributes"]["TargetAttributes"]) {
+        opts.xcodeProject.rootObject()._defn["attributes"]["TargetAttributes"] = {};
     }
+    opts.xcodeProject.rootObject()._defn["attributes"]["TargetAttributes"][nativeTargetID] = {
+        TestTargetID: opts.appTarget._id,
+        CreatedOnToolsVersion: "12.0.1",
+    };
+    // Add it to the xcscheme
+    xcodejs_1.XCSchemes.addTests({
+        projectPath: opts.projectPath,
+        appScheme: opts.appScheme,
+        nativeTargetID,
+        xcodeFileName: opts.xcodeFileName,
+    });
+}
+function installVersionBundle(argv) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const xcodeProject = readProject(argv["xcode-project"]);
+        const appTarget = extractTarget(xcodeProject.appTargets(), argv["app-target"]);
+        // Make sure to set synthetic versions on the version bundle source target (not the new one)
+        appTarget
+            .buildConfigurationList()
+            .buildConfigs()
+            .forEach((buildConfig) => {
+            buildConfig.buildSettings()["MARKETING_VERSION"] = argv["app-version"];
+        });
+        let schemeName = argv["app-scheme"];
+        const buildTarget = addScreenplayVersionBundleTarget({
+            xcodeProjectPath: argv["xcode-project"],
+            xcodeProject: xcodeProject,
+            appTarget: appTarget,
+            appScheme: schemeName,
+            destination: argv.destination,
+            workspacePath: argv["workspace"],
+        });
+        xcodejs_1.XCSchemes.createSchema({
+            srcSchemeName: schemeName,
+            projectPath: argv["xcode-project"],
+            srcAppTarget: appTarget,
+            newBuildTarget: buildTarget,
+            buildableNameExtension: "app",
+        });
+        xcodeProject.writeFileSync(path_1.default.join(argv["xcode-project"], "project.pbxproj"));
+        console.log(chalk_1.default.cyanBright("Screenplay successfully installed!"));
+    });
 }
 function install(argv) {
-    const xcodeProjectPath = argv["xcode_project"];
-    const xcodeProject = readProject(xcodeProjectPath);
-    const sourceAppTargetName = argv["app_target"];
-    // To get idempotency, we simply remove and re-install
-    removeScreenplayManagedTargetsAndProducts(xcodeProject);
-    const appTargets = xcodeProject.appTargets();
-    const appTarget = extractTarget(appTargets, sourceAppTargetName);
-    const frameworkTarget = createFrameworkTargetFromAppTarget(xcodeProject, appTarget);
-    const buildTargetId = addScreenplayAppTarget(xcodeProject, frameworkTarget, appTarget);
-    createSchema(xcodeProjectPath, appTarget, buildTargetId);
-    // Note: For some apps (such as DuckDuckGo) the target's app icon is only
-    // set if you copy the relevant files / include that XCAsset.
-    //
-    // While it's nice, it seems like an unnecessary build step for a small nicety
-    // it's possible we'll explore this in the future
-    xcodeProject.writeFileSync(path_1.default.join(xcodeProjectPath, "project.pbxproj"));
+    return __awaiter(this, void 0, void 0, function* () {
+        const xcodeProject = readProject(argv["xcode-project"]);
+        const xcodeFileName = argv["xcode-project"].split("/").slice(-1)[0];
+        // To get idempotency, we simply remove and re-install
+        removeScreenplayManagedTargetsAndProducts(xcodeProject);
+        const appTargets = xcodeProject.appTargets();
+        const appTarget = extractTarget(appTargets, argv["app-target"]);
+        let schemeName = argv["app-scheme"];
+        if (!schemeName) {
+            schemeName = appTarget.name();
+            if (!xcodejs_1.XCSchemes.schemeExists(argv["xcode-project"], schemeName)) {
+                utils_1.error(`Could not infer app scheme name, please provide it using the --app-scheme flag`);
+            }
+        }
+        const [screenplayAppId, buildTarget] = yield addScreenplayAppTarget({
+            xcodeProjectPath: argv["xcode-project"],
+            xcodeProject: xcodeProject,
+            appTarget: appTarget,
+            newAppToken: argv["key"],
+            appToken: argv["appToken"],
+            appScheme: schemeName,
+            workspacePath: argv["workspace"],
+        });
+        const newSchemeName = xcodejs_1.XCSchemes.createSchema({
+            srcSchemeName: schemeName,
+            projectPath: argv["xcode-project"],
+            srcAppTarget: appTarget,
+            newBuildTarget: buildTarget,
+            buildableNameExtension: "app",
+        });
+        if (argv["with-tests"]) {
+            addTests({
+                xcodeFileName,
+                projectPath: argv["xcode-project"],
+                xcodeProject,
+                appTarget: buildTarget,
+                appScheme: newSchemeName,
+            });
+        }
+        // Note: For some apps (such as DuckDuckGo) the target's app icon is only
+        // set if you copy the relevant files / include that XCAsset.
+        //
+        // While it's nice, it seems like an unnecessary build step for a small nicety
+        // it's possible we'll explore this in the future
+        xcodeProject.writeFileSync(path_1.default.join(argv["xcode-project"], "project.pbxproj"));
+        console.log(chalk_1.default.cyanBright("Screenplay successfully installed!"));
+        if (screenplayAppId) {
+            console.log(`Visit https://screenplay.dev/app/${screenplayAppId} to manage rollbacks`);
+        }
+    });
 }
 yargs_1.default
-    .command("install <xcode_project>", "Add Screenplay to the specified Xcode project", (yargs) => {
+    .command("install", "Add Screenplay to the specified Xcode project. This command requires a Screenplay app token, which can be found at https://screenplay.dev/create-app", (yargs) => {
+    yargs
+        .option("xcode-project", {
+        describe: "The Xcode project to install Screenplay on",
+        type: "string",
+        demandOption: true,
+    })
+        .option("app-target", {
+        describe: "The name of the target which builds your app",
+        type: "string",
+        demandOption: false,
+    })
+        .option("app-scheme", {
+        describe: "The name of the scheme which builds your app",
+        type: "string",
+        demandOption: false,
+    })
+        .option("workspace", {
+        describe: "The workspace you use to build the app",
+        type: "string",
+        default: undefined,
+        demandOption: false,
+    })
+        .option("with-tests", {
+        type: "boolean",
+        describe: "Whether to include tests to ensure the app boots properly. This is primarily just used to debug installations and during automated tests.",
+        default: false,
+        demandOption: false,
+    })
+        .option("key", {
+        type: "string",
+        describe: "The secret key, specific to your organization, that allows you to create a new app.",
+    })
+        .option("appToken", {
+        type: "string",
+        describe: "An app token that's already been issued for this app (typically only used when reinstalling Screenplay on an XCode project).",
+    })
+        .check((argv) => {
+        return ((argv["key"] || argv["appToken"]) &&
+            !(argv["key"] && argv["appToken"]));
+    });
+}, (argv) => {
+    return install(argv);
+})
+    .command("version-bundle", "Add version bundle target", (yargs) => {
+    yargs
+        .option("xcode-project", {
+        describe: "The Xcode project to install Screenplay on",
+        type: "string",
+        demandOption: true,
+    })
+        .option("destination", {
+        describe: "Where to write the finished version bundle to",
+        type: "string",
+        demandOption: true,
+    })
+        .option("app-target", {
+        describe: "The name of the target which builds your app",
+        type: "string",
+        demandOption: false,
+    })
+        .option("app-version", {
+        describe: "The version to show up in the info plist",
+        type: "string",
+        demandOption: true,
+    })
+        .option("app-scheme", {
+        describe: "The name of the scheme which builds your app",
+        type: "string",
+        demandOption: false,
+    })
+        .option("workspace", {
+        describe: "The workspace you use to build the app",
+        type: "string",
+        default: undefined,
+        demandOption: false,
+    });
+}, (argv) => {
+    return installVersionBundle(argv);
+})
+    .command("uninstall <xcode_project>", "Remove Screenplay entirely from the specified xcode project", (yargs) => {
     yargs.positional("xcode_project", {
         describe: "The Xcode project to install Screenplay on",
     });
-    yargs.option("app_target", {
+}, (argv) => {
+    const xcodeProject = readProject(argv["xcode_project"]);
+    removeScreenplayManagedTargetsAndProducts(xcodeProject);
+    xcodeProject.writeFileSync(path_1.default.join(argv["xcode_project"], "project.pbxproj"));
+    console.log(`Screenplay has been uninstalled.`);
+})
+    .command("reinstall <xcode_project>", "Reinstall Screenplay on the specified xcode project", (yargs) => {
+    yargs.positional("xcode_project", {
+        describe: "The Xcode project to install Screenplay on",
+    });
+}, (argv) => {
+    const xcodeProject = readProject(argv["xcode_project"]);
+    // get details
+    const installDetails = extractScreenplayReinstallDetails(argv["xcode_project"], xcodeProject);
+    // uninstall
+    removeScreenplayManagedTargetsAndProducts(xcodeProject);
+    xcodeProject.writeFileSync(path_1.default.join(argv["xcode_project"], "project.pbxproj"));
+    // reinstall
+    installDetails.forEach((installDetail) => {
+        install(installDetail);
+    });
+})
+    .command("debug-metadata <xcode_project>", "Print the detected name and icon for an xcode project", (yargs) => {
+    yargs.positional("xcode_project", {
+        describe: "The Xcode project to install Screenplay on",
+    });
+    yargs.option("app-target", {
         describe: "The name of the target which builds your app",
     });
 }, (argv) => {
-    install(argv);
+    const xcodeProjectPath = argv["xcode_project"];
+    const xcodeProject = readProject(xcodeProjectPath);
+    const sourceAppTargetName = argv["app-target"];
+    const appTargets = xcodeProject.appTargets();
+    const appTarget = extractTarget(appTargets, sourceAppTargetName);
+    const [buildSetting, appTargetName,] = xcodejs_1.getBuildSettingsAndTargetNameFromTarget(xcodeProjectPath, 
+    // TODO: this isn't entirely right, we're conflating target and scheme (which may be close enough, but should prolly be cleaned up)
+    appTarget.name(), {});
+    const realAppTarget = xcodeProject.getTargetWithName(appTargetName);
+    if (realAppTarget === null) {
+        console.log("Missing target: " + appTargetName);
+        process.exit(1);
+    }
+    const name = xcodeProject.extractAppName(buildSetting);
+    console.log(`${chalk_1.default.cyanBright("Name")}: ` + name);
+    const icon = xcodeProject.extractMarketingAppIcon(buildSetting, realAppTarget);
+    console.log(`${chalk_1.default.cyanBright("Icon")}: ` + icon);
 })
+    .usage([
+    "  ____                                 _             ",
+    " / ___|  ___ _ __ ___  ___ _ __  _ __ | | __ _ _   _ ",
+    " \\___ \\ / __| '__/ _ \\/ _ \\ '_ \\| '_ \\| |/ _` | | | |",
+    "  ___) | (__| | |  __/  __/ | | | |_) | | (_| | |_| |",
+    " |____/ \\___|_|  \\___|\\___|_| |_| .__/|_|\\__,_|\\__, |",
+    "                                |_|            |___/ ",
+    `Create confidently - ${chalk_1.default.cyanBright("Sign up at https://screenplay.dev")}`,
+    "",
+    "The Screenplay CLI helps you add and remove Screenplay",
+    "from your xcode projects.",
+].join("\n"))
     .strict()
     .demandCommand().argv;
 //# sourceMappingURL=index.js.map
