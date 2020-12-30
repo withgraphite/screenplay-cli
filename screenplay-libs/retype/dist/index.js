@@ -68,7 +68,7 @@ exports.NullType = NullType;
 exports.nulltype = new NullType();
 /**
  * Note: I'm explicitly excluding dictionaries from this library.
- * I have seen very few legitamate uses of dictionaries in API design
+ * I have seen very few legitimate uses of dictionaries in API design
  * and more common than not, the use case is better served by a shape
  * or an array.
  */

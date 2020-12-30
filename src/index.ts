@@ -733,11 +733,6 @@ async function install(argv: InstallArgs) {
     });
   }
 
-  // Note: For some apps (such as DuckDuckGo) the target's app icon is only
-  // set if you copy the relevant files / include that XCAsset.
-  //
-  // While it's nice, it seems like an unnecessary build step for a small nicety
-  // it's possible we'll explore this in the future
   xcodeProject.writeFileSync(
     path.join(argv["xcode-project"], "project.pbxproj")
   );

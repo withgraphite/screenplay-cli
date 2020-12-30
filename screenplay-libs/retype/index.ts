@@ -25,9 +25,7 @@ export type UnwrapSchemaMap<TSchemaMap> = keyof TSchemaMap extends never
       [K in any]: never;
     }
   : {
-      [SchemaMapIndex in keyof TSchemaMap]: TSchemaMap[SchemaMapIndex] extends Schema<
-        unknown
-      >
+      [SchemaMapIndex in keyof TSchemaMap]: TSchemaMap[SchemaMapIndex] extends Schema<unknown>
         ? TypeOf<TSchemaMap[SchemaMapIndex]>
         : never;
     };
@@ -106,7 +104,7 @@ export const nulltype = new NullType();
 
 /**
  * Note: I'm explicitly excluding dictionaries from this library.
- * I have seen very few legitamate uses of dictionaries in API design
+ * I have seen very few legitimate uses of dictionaries in API design
  * and more common than not, the use case is better served by a shape
  * or an array.
  */
@@ -176,9 +174,7 @@ export class TupleType<
   TDefnSchema extends readonly Schema<unknown>[],
   // Mapped tuple logic derived from https://stackoverflow.com/a/51679156/781199
   TDefn extends {
-    [DefnIndex in keyof TDefnSchema]: TDefnSchema[DefnIndex] extends Schema<
-      unknown
-    >
+    [DefnIndex in keyof TDefnSchema]: TDefnSchema[DefnIndex] extends Schema<unknown>
       ? TypeOf<TDefnSchema[DefnIndex]>
       : never;
   } & { length: TDefnSchema["length"] }
