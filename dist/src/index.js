@@ -497,6 +497,9 @@ function install(argv) {
         const appTargets = xcodeProject.appTargets();
         const appTarget = extractTarget(appTargets, argv["app-target"]);
         const schemesAutomaticallyManaged = xcodejs_1.XCSchemes.schemesAutomaticallyManaged(argv["xcode-project"]);
+        if (schemesAutomaticallyManaged) {
+            console.log("Detected schemes as automatically managed");
+        }
         let schemeName = argv["app-scheme"];
         if (!schemeName) {
             schemeName = appTarget.name();
