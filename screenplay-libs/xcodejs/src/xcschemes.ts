@@ -10,6 +10,12 @@ export function schemeExists(projectPath: string, schemeName: string) {
   return fs.existsSync(schemesFolder) && fs.existsSync(appSchemePath);
 }
 
+export function schemesAutomaticallyManaged(projectPath: string): boolean {
+  // TODO: We can likely do better by actually inspecting the project attributes in xcode... we'll worry about that later
+  const schemesFolder = path.join(projectPath, "xcshareddata", "xcschemes");
+  return !fs.existsSync(schemesFolder);
+}
+
 export function createSchema(opts: {
   projectPath: string;
   srcSchemeName: string;
@@ -176,6 +182,10 @@ export function addTests(opts: {
   nativeTargetID: string;
   xcodeFileName: string;
 }) {
+  if (schemesAutomaticallyManaged(opts.projectPath)) {
+    return;
+  }
+
   validateSchemePath(opts.projectPath, opts.appScheme);
   const schemesFolder = path.join(
     opts.projectPath,

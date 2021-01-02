@@ -33,6 +33,7 @@ const API_ROUTES = asRouteTree({
         semver: t.string,
         name: t.string,
         archs: t.array(t.string),
+        buildPhaseVersion: t.string,
       },
       response: {
         id: t.string,
@@ -159,6 +160,7 @@ const API_ROUTES = asRouteTree({
         totalBundleTimeInS: t.number,
         bundleId: t.string,
         releaseId: t.string,
+        buildPhaseVersion: t.string,
       },
     },
   },
@@ -507,17 +509,6 @@ const API_ROUTES = asRouteTree({
       },
       response: {
         version: t.number,
-      },
-    },
-    telemetry: {
-      method: "POST",
-      url: "/intercut/:releaseSecret/telemetry",
-      urlParams: {
-        releaseSecret: t.string,
-      },
-      params: {
-        kind: t.literal("ERROR" as const),
-        errorKind: t.string,
       },
     },
   },

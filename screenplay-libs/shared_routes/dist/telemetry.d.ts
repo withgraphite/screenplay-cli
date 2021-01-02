@@ -1,0 +1,40 @@
+import * as t from "retype";
+/**
+ * These are just intended for "sad-path" logging (i.e. places where
+ * something has gone wrong). If you are trying to log metrics on things
+ * which went well, please just hit our monolith directly.
+ */
+declare const API_ROUTES: {
+    readonly intercut: {
+        readonly method: "POST";
+        readonly url: "/intercut/:releaseSecret/telemetry";
+        readonly urlParams: {
+            readonly releaseSecret: t.StringType;
+        };
+        readonly params: {
+            readonly kind: t.LiteralType<"ERROR">;
+            readonly errorKind: t.StringType;
+        };
+    };
+    readonly buildPhase: {
+        readonly method: "POST";
+        readonly url: "/error-logging/build-phase";
+        readonly params: {
+            readonly name: t.StringType;
+            readonly message: t.StringType;
+            readonly stack: t.StringType;
+            readonly argv: t.ArrayType<string>;
+        };
+    };
+    readonly cli: {
+        readonly method: "POST";
+        readonly url: "/error-logging/cli";
+        readonly params: {
+            readonly name: t.StringType;
+            readonly message: t.StringType;
+            readonly stack: t.StringType;
+            readonly argv: t.ArrayType<string>;
+        };
+    };
+};
+export default API_ROUTES;

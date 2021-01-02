@@ -475,13 +475,15 @@ function installVersionBundle(argv) {
             destination: argv.destination,
             workspacePath: argv["workspace"],
         });
-        xcodejs_1.XCSchemes.createSchema({
-            srcSchemeName: schemeName,
-            projectPath: argv["xcode-project"],
-            srcAppTarget: appTarget,
-            newBuildTarget: buildTarget,
-            buildableNameExtension: "app",
-        });
+        if (schemeName) {
+            xcodejs_1.XCSchemes.createSchema({
+                srcSchemeName: schemeName,
+                projectPath: argv["xcode-project"],
+                srcAppTarget: appTarget,
+                newBuildTarget: buildTarget,
+                buildableNameExtension: "app",
+            });
+        }
         xcodeProject.writeFileSync(path_1.default.join(argv["xcode-project"], "project.pbxproj"));
         console.log(chalk_1.default.cyanBright("Screenplay successfully installed!"));
     });
@@ -494,10 +496,12 @@ function install(argv) {
         removeScreenplayManagedTargetsAndProducts(xcodeProject);
         const appTargets = xcodeProject.appTargets();
         const appTarget = extractTarget(appTargets, argv["app-target"]);
+        const schemesAutomaticallyManaged = xcodejs_1.XCSchemes.schemesAutomaticallyManaged(argv["xcode-project"]);
         let schemeName = argv["app-scheme"];
         if (!schemeName) {
             schemeName = appTarget.name();
-            if (!xcodejs_1.XCSchemes.schemeExists(argv["xcode-project"], schemeName)) {
+            if (!schemesAutomaticallyManaged &&
+                !xcodejs_1.XCSchemes.schemeExists(argv["xcode-project"], schemeName)) {
                 utils_1.error(`Could not infer app scheme name, please provide it using the --app-scheme flag`);
             }
         }
@@ -510,13 +514,15 @@ function install(argv) {
             appScheme: schemeName,
             workspacePath: argv["workspace"],
         });
-        const newSchemeName = xcodejs_1.XCSchemes.createSchema({
-            srcSchemeName: schemeName,
-            projectPath: argv["xcode-project"],
-            srcAppTarget: appTarget,
-            newBuildTarget: buildTarget,
-            buildableNameExtension: "app",
-        });
+        const newSchemeName = schemesAutomaticallyManaged
+            ? `Screenplay-${schemeName}`
+            : xcodejs_1.XCSchemes.createSchema({
+                srcSchemeName: schemeName,
+                projectPath: argv["xcode-project"],
+                srcAppTarget: appTarget,
+                newBuildTarget: buildTarget,
+                buildableNameExtension: "app",
+            });
         if (argv["with-tests"]) {
             addTests({
                 xcodeFileName,
@@ -676,8 +682,16 @@ yargs_1.default
     `Create confidently - ${chalk_1.default.cyanBright("Sign up at https://screenplay.dev")}`,
     "",
     "The Screenplay CLI helps you add and remove Screenplay",
-    "from your xcode projects.",
+    "from your Xcode projects.",
 ].join("\n"))
     .strict()
     .demandCommand().argv;
+process.on("uncaughtExceptionMonitor", (err) => __awaiter(void 0, void 0, void 0, function* () {
+    yield shared_routes_1.request.requestWithArgs("https://screenplaylogs.com", shared_routes_1.telemetry.cli, {
+        name: err.name,
+        message: err.message,
+        stack: err.stack || "",
+        argv: process.argv,
+    });
+}));
 //# sourceMappingURL=index.js.map

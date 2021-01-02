@@ -22,7 +22,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addTests = exports.createSchema = exports.schemeExists = void 0;
+exports.addTests = exports.createSchema = exports.schemesAutomaticallyManaged = exports.schemeExists = void 0;
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 const xml_js_1 = __importDefault(require("xml-js"));
@@ -32,6 +32,12 @@ function schemeExists(projectPath, schemeName) {
     return fs.existsSync(schemesFolder) && fs.existsSync(appSchemePath);
 }
 exports.schemeExists = schemeExists;
+function schemesAutomaticallyManaged(projectPath) {
+    // TODO: We can likely do better by actually inspecting the project attributes in xcode... we'll worry about that later
+    const schemesFolder = path.join(projectPath, "xcshareddata", "xcschemes");
+    return !fs.existsSync(schemesFolder);
+}
+exports.schemesAutomaticallyManaged = schemesAutomaticallyManaged;
 function createSchema(opts) {
     const schemesFolder = path.join(opts.projectPath, "xcshareddata", "xcschemes");
     if (fs.existsSync(schemesFolder)) {
@@ -144,6 +150,9 @@ function validateSchemePath(projectPath, appScheme) {
     }
 }
 function addTests(opts) {
+    if (schemesAutomaticallyManaged(opts.projectPath)) {
+        return;
+    }
     validateSchemePath(opts.projectPath, opts.appScheme);
     const schemesFolder = path.join(opts.projectPath, "xcshareddata", "xcschemes");
     const appSchemePath = path.join(schemesFolder, `${opts.appScheme}.xcscheme`);

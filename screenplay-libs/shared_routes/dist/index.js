@@ -28,4 +28,6 @@ Object.defineProperty(exports, "oauth", { enumerable: true, get: function () { r
 exports.request = __importStar(require("./request"));
 var server_1 = require("./server");
 Object.defineProperty(exports, "API_SERVER", { enumerable: true, get: function () { return server_1.API_SERVER; } });
+var telemetry_1 = require("./telemetry");
+Object.defineProperty(exports, "telemetry", { enumerable: true, get: function () { return telemetry_1.default; } });
 //# sourceMappingURL=index.js.map

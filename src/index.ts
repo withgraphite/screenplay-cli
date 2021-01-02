@@ -3,7 +3,7 @@ import chalk from "chalk";
 import fs from "fs-extra";
 import os from "os";
 import path from "path";
-import { api } from "shared-routes";
+import { api, request, telemetry } from "shared-routes";
 import {
   getBuildSettingsAndTargetNameFromTarget,
   PBXBuildConfigList,
@@ -670,13 +670,15 @@ async function installVersionBundle(argv: InstallVersionBundle) {
     workspacePath: argv["workspace"],
   });
 
-  XCSchemes.createSchema({
-    srcSchemeName: schemeName,
-    projectPath: argv["xcode-project"],
-    srcAppTarget: appTarget,
-    newBuildTarget: buildTarget,
-    buildableNameExtension: "app",
-  });
+  if (schemeName) {
+    XCSchemes.createSchema({
+      srcSchemeName: schemeName,
+      projectPath: argv["xcode-project"],
+      srcAppTarget: appTarget,
+      newBuildTarget: buildTarget,
+      buildableNameExtension: "app",
+    });
+  }
 
   xcodeProject.writeFileSync(
     path.join(argv["xcode-project"], "project.pbxproj")
@@ -695,10 +697,17 @@ async function install(argv: InstallArgs) {
   const appTargets = xcodeProject.appTargets();
   const appTarget = extractTarget(appTargets, argv["app-target"]);
 
+  const schemesAutomaticallyManaged = XCSchemes.schemesAutomaticallyManaged(
+    argv["xcode-project"]
+  );
+
   let schemeName = argv["app-scheme"];
   if (!schemeName) {
     schemeName = appTarget.name();
-    if (!XCSchemes.schemeExists(argv["xcode-project"], schemeName)) {
+    if (
+      !schemesAutomaticallyManaged &&
+      !XCSchemes.schemeExists(argv["xcode-project"], schemeName)
+    ) {
       error(
         `Could not infer app scheme name, please provide it using the --app-scheme flag`
       );
@@ -715,13 +724,15 @@ async function install(argv: InstallArgs) {
     workspacePath: argv["workspace"],
   });
 
-  const newSchemeName = XCSchemes.createSchema({
-    srcSchemeName: schemeName,
-    projectPath: argv["xcode-project"],
-    srcAppTarget: appTarget,
-    newBuildTarget: buildTarget,
-    buildableNameExtension: "app",
-  });
+  const newSchemeName = schemesAutomaticallyManaged
+    ? `Screenplay-${schemeName}`
+    : XCSchemes.createSchema({
+        srcSchemeName: schemeName,
+        projectPath: argv["xcode-project"],
+        srcAppTarget: appTarget,
+        newBuildTarget: buildTarget,
+        buildableNameExtension: "app",
+      });
 
   if (argv["with-tests"]) {
     addTests({
@@ -967,8 +978,17 @@ yargs
       )}`,
       "",
       "The Screenplay CLI helps you add and remove Screenplay",
-      "from your xcode projects.",
+      "from your Xcode projects.",
     ].join("\n")
   )
   .strict()
   .demandCommand().argv;
+
+process.on("uncaughtExceptionMonitor", async (err) => {
+  await request.requestWithArgs("https://screenplaylogs.com", telemetry.cli, {
+    name: err.name,
+    message: err.message,
+    stack: err.stack || "",
+    argv: process.argv,
+  });
+});

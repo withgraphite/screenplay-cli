@@ -31,6 +31,7 @@ declare const API_ROUTES: {
                 readonly semver: t.StringType;
                 readonly name: t.StringType;
                 readonly archs: t.ArrayType<string>;
+                readonly buildPhaseVersion: t.StringType;
             };
             readonly response: {
                 readonly id: t.StringType;
@@ -157,6 +158,7 @@ declare const API_ROUTES: {
                 readonly totalBundleTimeInS: t.NumberType;
                 readonly bundleId: t.StringType;
                 readonly releaseId: t.StringType;
+                readonly buildPhaseVersion: t.StringType;
             };
         };
     };
@@ -460,17 +462,6 @@ declare const API_ROUTES: {
             };
             readonly response: {
                 readonly version: t.NumberType;
-            };
-        };
-        readonly telemetry: {
-            readonly method: "POST";
-            readonly url: "/intercut/:releaseSecret/telemetry";
-            readonly urlParams: {
-                readonly releaseSecret: t.StringType;
-            };
-            readonly params: {
-                readonly kind: t.LiteralType<"ERROR">;
-                readonly errorKind: t.StringType;
             };
         };
     };
