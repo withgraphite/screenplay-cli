@@ -703,6 +703,8 @@ async function install(argv: InstallArgs) {
 
   if (schemesAutomaticallyManaged) {
     console.log("Detected schemes as automatically managed");
+  } else {
+    console.log("Detected schemes as manually managed");
   }
 
   let schemeName = argv["app-scheme"];

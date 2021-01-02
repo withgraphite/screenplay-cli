@@ -500,6 +500,9 @@ function install(argv) {
         if (schemesAutomaticallyManaged) {
             console.log("Detected schemes as automatically managed");
         }
+        else {
+            console.log("Detected schemes as manually managed");
+        }
         let schemeName = argv["app-scheme"];
         if (!schemeName) {
             schemeName = appTarget.name();
