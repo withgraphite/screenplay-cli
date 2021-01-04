@@ -57,14 +57,8 @@ export class Plist {
     overrideList: string[]
   ) {
     // If override value, take the newest value.
-    console.log(`Override list = ${overrideList}`);
     if (overrideList.includes(key)) {
       const newestVal = values[0];
-      console.log(
-        chalk.yellow(
-          `warning: Merging plist value conflict ${key} with lastest value ${newestVal}`
-        )
-      );
       return newestVal;
     }
     // No specific handler found, assuming they must all be identical
@@ -120,8 +114,6 @@ export class Plist {
   }
 
   public writeFile(file: string) {
-    console.log("Writing plist", this._defn);
-
     execSync(`plutil -convert xml1 - -o "${file}"`, {
       input: JSON.stringify(this._defn),
     });

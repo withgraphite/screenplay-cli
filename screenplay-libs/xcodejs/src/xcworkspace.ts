@@ -1,4 +1,3 @@
-import chalk from "chalk";
 import * as fs from "fs-extra";
 import path from "path";
 import convert from "xml-js";
@@ -20,10 +19,8 @@ export class XCWorkspace {
   public allFiles(): string[] {
     return this._defn["Workspace"]["FileRef"].map((fileRef: FileRef) => {
       if (!fileRef._attributes.location.startsWith("group:")) {
-        console.log(
-          chalk.yellow(
-            "Error! Unknown format, XCWorkspace file ref does not start with 'group:'"
-          )
+        throw new Error(
+          "Error! Unknown format, XCWorkspace file ref does not start with 'group:'"
         );
       }
 

@@ -33,6 +33,7 @@ const API_ROUTES = asRouteTree({
         semver: t.string,
         name: t.string,
         archs: t.array(t.string),
+        isRelease: t.boolean,
         buildPhaseVersion: t.string,
       },
       response: {
@@ -161,6 +162,8 @@ const API_ROUTES = asRouteTree({
         bundleId: t.string,
         releaseId: t.string,
         buildPhaseVersion: t.string,
+        archs: t.array(t.string),
+        isRelease: t.boolean,
       },
     },
   },
@@ -330,6 +333,7 @@ const API_ROUTES = asRouteTree({
             name: t.string,
             createdAt: t.number,
             users: t.number,
+            builtForRelease: t.boolean,
             versions: t.array(
               t.shape({
                 name: t.string,

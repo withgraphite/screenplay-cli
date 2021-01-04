@@ -247,14 +247,12 @@ async function addScreenplayAppTarget(
         return target.name() === returnedAppTarget;
       }).length > 1
   ) {
-    console.log("Error! Many targets with the same name detected");
-    process.exit(1);
+    error("Error! Many targets with the same name detected");
   }
 
   const name = opts.xcodeProject.extractAppName(buildSetting);
   if (name === null) {
-    console.log("Error! Could not infer name");
-    process.exit(1);
+    error("Error! Could not infer name");
   }
 
   let appSecret = opts.appToken;
@@ -701,12 +699,6 @@ async function install(argv: InstallArgs) {
     argv["xcode-project"]
   );
 
-  if (schemesAutomaticallyManaged) {
-    console.log("Detected schemes as automatically managed");
-  } else {
-    console.log("Detected schemes as manually managed");
-  }
-
   let schemeName = argv["app-scheme"];
   if (!schemeName) {
     schemeName = appTarget.name();
@@ -957,8 +949,7 @@ yargs
 
       const realAppTarget = xcodeProject.getTargetWithName(appTargetName);
       if (realAppTarget === null) {
-        console.log("Missing target: " + appTargetName);
-        process.exit(1);
+        error("Missing target: " + appTargetName);
       }
 
       const name = xcodeProject.extractAppName(buildSetting);

@@ -31,6 +31,7 @@ declare const API_ROUTES: {
                 readonly semver: t.StringType;
                 readonly name: t.StringType;
                 readonly archs: t.ArrayType<string>;
+                readonly isRelease: t.BooleanType;
                 readonly buildPhaseVersion: t.StringType;
             };
             readonly response: {
@@ -159,6 +160,8 @@ declare const API_ROUTES: {
                 readonly bundleId: t.StringType;
                 readonly releaseId: t.StringType;
                 readonly buildPhaseVersion: t.StringType;
+                readonly archs: t.ArrayType<string>;
+                readonly isRelease: t.BooleanType;
             };
         };
     };
@@ -305,6 +308,7 @@ declare const API_ROUTES: {
                     name: string;
                     createdAt: number;
                     users: number;
+                    builtForRelease: boolean;
                     versions: {
                         name: string;
                         receivingTraffic: boolean;

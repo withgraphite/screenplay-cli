@@ -161,13 +161,11 @@ function addScreenplayAppTarget(opts) {
                 .filter((target) => {
                 return target.name() === returnedAppTarget;
             }).length > 1) {
-            console.log("Error! Many targets with the same name detected");
-            process.exit(1);
+            utils_1.error("Error! Many targets with the same name detected");
         }
         const name = opts.xcodeProject.extractAppName(buildSetting);
         if (name === null) {
-            console.log("Error! Could not infer name");
-            process.exit(1);
+            utils_1.error("Error! Could not infer name");
         }
         let appSecret = opts.appToken;
         let appId = null;
@@ -497,12 +495,6 @@ function install(argv) {
         const appTargets = xcodeProject.appTargets();
         const appTarget = extractTarget(appTargets, argv["app-target"]);
         const schemesAutomaticallyManaged = xcodejs_1.XCSchemes.schemesAutomaticallyManaged(argv["xcode-project"]);
-        if (schemesAutomaticallyManaged) {
-            console.log("Detected schemes as automatically managed");
-        }
-        else {
-            console.log("Detected schemes as manually managed");
-        }
         let schemeName = argv["app-scheme"];
         if (!schemeName) {
             schemeName = appTarget.name();
@@ -670,8 +662,7 @@ yargs_1.default
     appTarget.name(), {});
     const realAppTarget = xcodeProject.getTargetWithName(appTargetName);
     if (realAppTarget === null) {
-        console.log("Missing target: " + appTargetName);
-        process.exit(1);
+        utils_1.error("Missing target: " + appTargetName);
     }
     const name = xcodeProject.extractAppName(buildSetting);
     console.log(`${chalk_1.default.cyanBright("Name")}: ` + name);

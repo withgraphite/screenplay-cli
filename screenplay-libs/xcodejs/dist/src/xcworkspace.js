@@ -23,7 +23,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.XCWorkspace = void 0;
-const chalk_1 = __importDefault(require("chalk"));
 const fs = __importStar(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
 const xml_js_1 = __importDefault(require("xml-js"));
@@ -35,7 +34,7 @@ class XCWorkspace {
     allFiles() {
         return this._defn["Workspace"]["FileRef"].map((fileRef) => {
             if (!fileRef._attributes.location.startsWith("group:")) {
-                console.log(chalk_1.default.yellow("Error! Unknown format, XCWorkspace file ref does not start with 'group:'"));
+                throw new Error("Error! Unknown format, XCWorkspace file ref does not start with 'group:'");
             }
             return fileRef._attributes.location.slice(6);
         });
