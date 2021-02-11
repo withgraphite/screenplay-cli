@@ -32,7 +32,7 @@ export default class PBXNativeTarget extends PBXObject {
   }
 
   dependencies(): ReadonlyArray<PBXTargetDependency> {
-    return this._defn["dependencies"].map((dependencyId: string) => {
+    return (this._defn["dependencies"] || []).map((dependencyId: string) => {
       return new PBXTargetDependency(dependencyId, this._proj);
     });
   }
@@ -42,6 +42,17 @@ export default class PBXNativeTarget extends PBXObject {
       this._defn["buildConfigurationList"],
       this._proj
     );
+  }
+
+  buildConfiguration(name: string) {
+    const config = this.buildConfigurationList()
+      .buildConfigs()
+      .find((config) => config.name() == name);
+    if (!config) {
+      throw Error(`Failed to find build configuration ${name}`);
+    }
+
+    return config;
   }
 
   defaultConfigurationName(): string {

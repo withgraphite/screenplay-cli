@@ -4,6 +4,7 @@ import fs from "fs-extra";
 import * as path from "path";
 import BuildSettings from "./build_settings";
 import PBXBuildConfig from "./pbx_build_config";
+import PBXBuildConfigList from "./pbx_build_config_list";
 import PBXBuildFile from "./pbx_build_file";
 import PBXGroup from "./pbx_group";
 import PBXNativeTarget from "./pbx_native_target";
@@ -26,7 +27,7 @@ export default class PBXProj {
   _defn: Record<string, any>;
   _srcRoot: string;
 
-  constructor(defn: {}, srcRoot: string) {
+  constructor(defn: Record<string, unknown>, srcRoot: string) {
     this._defn = defn;
     this._srcRoot = srcRoot;
   }
@@ -56,7 +57,7 @@ export default class PBXProj {
   // *******
 
   static readFileSync(file: string) {
-    const data = execSync("plutil -convert json -o - " + file, {
+    const data = execSync(`plutil -convert json -o - "${file}"`, {
       maxBuffer: 1024 * 1024 * 1024,
     });
     const defn = JSON.parse(data.toString());
@@ -64,7 +65,7 @@ export default class PBXProj {
     return new PBXProj(defn, path.dirname(path.dirname(file)));
   }
 
-  public writeFileSync(file: string, format: string = "xml1") {
+  public writeFileSync(file: string, format = "xml1") {
     // Strangely, xcode can accept ANY format of the pbxproj (including JSON!)
     // just when you resave the project, it will get rewritten as a traditional one
     //
@@ -73,7 +74,7 @@ export default class PBXProj {
 
     // fs.writeFileSync(file, JSON.stringify(this._defn));
 
-    execSync(`plutil -convert ${format} - -o ` + file, {
+    execSync(`plutil -convert ${format} - -o "${file}"`, {
       input: JSON.stringify(this._defn),
     });
   }
@@ -258,10 +259,10 @@ export default class PBXProj {
         // TODO: This will become a shoddy assumption soon, b/c if we're merging different
         // versions of the same project, it WILL have the same UUIDs; we should
         // prolly have some way to rename them and replace the UUIDs
-        throw (
+        throw Error(
           "Duplicate UUIDs detected ('" +
-          id +
-          "')! Are you trying to merge a file into itself?"
+            id +
+            "')! Are you trying to merge a file into itself?"
         );
       }
 
@@ -351,25 +352,6 @@ export default class PBXProj {
     this.patchBuildConfigValuesForTarget(target, filePathPrefix);
   }
 
-  public getApplicationBuildSetting(key: string) {
-    // Just grab the version of the first buildConfig (usually just debug and release)
-    return this.rootObject()
-      .applicationTargets()[0]
-      .buildConfigurationList()
-      .buildConfigs()[0]
-      .get("buildSettings")[key];
-  }
-
-  public setApplicationBuildSetting(key: string, value: string) {
-    const appTargetBuildConfigs = this.rootObject()
-      .applicationTargets()[0]
-      .buildConfigurationList()
-      .buildConfigs();
-    for (const buildConfig of appTargetBuildConfigs) {
-      this._defn["objects"][buildConfig._id]["buildSettings"][key] = value;
-    }
-  }
-
   public mergeTargets(
     other: PBXProj,
     newMainGroup: PBXGroup,
@@ -431,7 +413,9 @@ export default class PBXProj {
       const searchPaths = buildSettings["LD_RUNPATH_SEARCH_PATHS"];
       if (searchPaths instanceof Array) {
         if (!searchPaths.includes("@executable_path/Frameworks")) {
-          throw "Error! App runtime search paths don't include frameworks. This may indicate something is about to break.";
+          throw Error(
+            "Error! App runtime search paths don't include frameworks. This may indicate something is about to break."
+          );
         }
 
         buildSettings["LD_RUNPATH_SEARCH_PATHS"] = searchPaths.map(
@@ -449,7 +433,9 @@ export default class PBXProj {
         );
       } else if (typeof searchPaths === "string") {
         if (!searchPaths.includes("@executable_path/Frameworks")) {
-          throw "Error! App runtime search paths don't include frameworks. This may indicate something is about to break.";
+          throw Error(
+            "Error! App runtime search paths don't include frameworks. This may indicate something is about to break."
+          );
         }
 
         buildSettings["LD_RUNPATH_SEARCH_PATHS"] = searchPaths.replace(
@@ -459,7 +445,9 @@ export default class PBXProj {
             "/Frameworks"
         );
       } else {
-        throw "Error! App runtime search paths are some undefined type (or simply undefined). This is not expected!";
+        throw Error(
+          "Error! App runtime search paths are some undefined type (or simply undefined). This is not expected!"
+        );
       }
 
       if (defaultConfigurationName === buildConfig.name()) {
@@ -491,7 +479,7 @@ export default class PBXProj {
     }
 
     if (!defaultBuildConfigDetails) {
-      throw "Error! No default config found!";
+      throw Error("Error! No default config found!");
     }
 
     return {
@@ -546,7 +534,7 @@ export default class PBXProj {
     );
     const contents = JSON.parse(rawContents.toString());
 
-    for (let imageMetadata of contents["images"]) {
+    for (const imageMetadata of contents["images"]) {
       if (
         imageMetadata["idiom"] === "ios-marketing" &&
         imageMetadata["filename"]
@@ -578,11 +566,59 @@ export default class PBXProj {
     return name;
   }
 
-  public getTargetWithName(name: string): PBXNativeTarget | null {
+  public duplicateBuildConfig(
+    buildConfig: PBXBuildConfig,
+    project: PBXProj
+  ): PBXBuildConfig {
+    const newObjID = generateUUID(project.allObjectKeys());
+    const newObj: Record<string, any> = {};
+
+    Object.keys(buildConfig._defn).forEach((key) => {
+      newObj[key] = deepCopy(buildConfig._defn[key]);
+    });
+
+    project._defn["objects"][newObjID] = newObj;
+    return new PBXBuildConfig(newObjID, project);
+  }
+
+  public duplicateBuildConfigList(
+    buildConfigList: PBXBuildConfigList,
+    project: PBXProj
+  ): PBXBuildConfigList {
+    const newObjID = generateUUID(project.allObjectKeys());
+    const newObj: Record<string, any> = {};
+
+    Object.keys(buildConfigList._defn).forEach((key) => {
+      if (key === "buildConfigurations") {
+        newObj[key] = buildConfigList._defn[key].map(
+          (buildConfigId: string) => {
+            return this.duplicateBuildConfig(
+              new PBXBuildConfig(buildConfigId, this),
+              project
+            )._id;
+          }
+        );
+      } else {
+        newObj[key] = deepCopy(buildConfigList._defn[key]);
+      }
+    });
+
+    project._defn["objects"][newObjID] = newObj;
+    return new PBXBuildConfigList(newObjID, project);
+  }
+
+  public getTargetWithName(
+    name: string,
+    mustBeAppTarget?: boolean
+  ): PBXNativeTarget | null {
     const candidates = this.rootObject()
       .targets()
       .filter((target) => {
-        return target.name() === name;
+        return (
+          target.name() === name &&
+          (!mustBeAppTarget ||
+            target.productType() === "com.apple.product-type.application")
+        );
       });
 
     if (candidates.length > 1) {
@@ -739,10 +775,7 @@ export default class PBXProj {
         (isa === "XCBuildConfiguration" &&
           ["baseConfigurationReference"].includes(objectKey)) ||
         (isa === "PBXVariantGroup" && ["children"].includes(objectKey)) ||
-        (isa === "PBXShellScriptBuildPhase" &&
-          ["files", "outputFileListPaths", "inputFileListPaths"].includes(
-            objectKey
-          )) ||
+        (isa === "PBXShellScriptBuildPhase" && ["files"].includes(objectKey)) ||
         (isa === "PBXHeadersBuildPhase" && ["files"].includes(objectKey))
       ) {
         if (!potentialKey(objectValue, false)) {

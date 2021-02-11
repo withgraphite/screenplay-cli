@@ -30,12 +30,21 @@ class PBXNativeTarget extends pbx_object_1.default {
         return this._defn["name"];
     }
     dependencies() {
-        return this._defn["dependencies"].map((dependencyId) => {
+        return (this._defn["dependencies"] || []).map((dependencyId) => {
             return new pbx_target_dependency_1.default(dependencyId, this._proj);
         });
     }
     buildConfigurationList() {
         return new pbx_build_config_list_1.default(this._defn["buildConfigurationList"], this._proj);
+    }
+    buildConfiguration(name) {
+        const config = this.buildConfigurationList()
+            .buildConfigs()
+            .find((config) => config.name() == name);
+        if (!config) {
+            throw Error(`Failed to find build configuration ${name}`);
+        }
+        return config;
     }
     defaultConfigurationName() {
         return this._defn["defaultConfigurationName"];

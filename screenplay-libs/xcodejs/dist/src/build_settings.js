@@ -59,7 +59,7 @@ class BuildSettings {
             const setting = parenSetting || bracketSetting;
             const tokens = setting.split(":");
             let value = this.fetchOrUndefined(tokens.shift()) || "";
-            for (let token of tokens) {
+            for (const token of tokens) {
                 value = this.applyOperation(token, value);
             }
             return value;
@@ -184,7 +184,7 @@ function getBuildSettingsAndTargetNameFromTarget(project, target, options) {
     }
     return [
         new BuildSettings(buildSettingsArray[0]["buildSettings"]),
-        buildSettingsArray[0]["target"],
+        buildSettingsArray[0]["target"].replace(/(^")|("$)/g, ""),
     ];
 }
 exports.getBuildSettingsAndTargetNameFromTarget = getBuildSettingsAndTargetNameFromTarget;

@@ -45,6 +45,7 @@ describe("xcschemes", function () {
       appScheme: "Screenplay-Fennec",
       nativeTargetID: newTargetId,
       xcodeFileName: path.basename(projectPath),
+      testTargetName: "ScreenplayUITests",
     });
     const newScheme = fs
       .readFileSync(

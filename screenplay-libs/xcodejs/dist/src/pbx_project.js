@@ -27,6 +27,7 @@ const child_process_1 = require("child_process");
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path = __importStar(require("path"));
 const pbx_build_config_1 = __importDefault(require("./pbx_build_config"));
+const pbx_build_config_list_1 = __importDefault(require("./pbx_build_config_list"));
 const pbx_build_file_1 = __importDefault(require("./pbx_build_file"));
 const pbx_group_1 = __importDefault(require("./pbx_group"));
 const pbx_native_target_1 = __importDefault(require("./pbx_native_target"));
@@ -58,7 +59,7 @@ class PBXProj {
     // On-disk
     // *******
     static readFileSync(file) {
-        const data = child_process_1.execSync("plutil -convert json -o - " + file, {
+        const data = child_process_1.execSync(`plutil -convert json -o - "${file}"`, {
             maxBuffer: 1024 * 1024 * 1024,
         });
         const defn = JSON.parse(data.toString());
@@ -71,7 +72,7 @@ class PBXProj {
         // HOWEVER, on big projects, xcode craps out on JSON and doesn't convert /
         // greys out the save button. For that reason we export as XML
         // fs.writeFileSync(file, JSON.stringify(this._defn));
-        child_process_1.execSync(`plutil -convert ${format} - -o ` + file, {
+        child_process_1.execSync(`plutil -convert ${format} - -o "${file}"`, {
             input: JSON.stringify(this._defn),
         });
     }
@@ -194,7 +195,7 @@ class PBXProj {
                 // TODO: This will become a shoddy assumption soon, b/c if we're merging different
                 // versions of the same project, it WILL have the same UUIDs; we should
                 // prolly have some way to rename them and replace the UUIDs
-                throw ("Duplicate UUIDs detected ('" +
+                throw Error("Duplicate UUIDs detected ('" +
                     id +
                     "')! Are you trying to merge a file into itself?");
             }
@@ -261,23 +262,6 @@ class PBXProj {
         this.patchBuildPaths(target, filePathPrefix);
         this.patchBuildConfigValuesForTarget(target, filePathPrefix);
     }
-    getApplicationBuildSetting(key) {
-        // Just grab the version of the first buildConfig (usually just debug and release)
-        return this.rootObject()
-            .applicationTargets()[0]
-            .buildConfigurationList()
-            .buildConfigs()[0]
-            .get("buildSettings")[key];
-    }
-    setApplicationBuildSetting(key, value) {
-        const appTargetBuildConfigs = this.rootObject()
-            .applicationTargets()[0]
-            .buildConfigurationList()
-            .buildConfigs();
-        for (const buildConfig of appTargetBuildConfigs) {
-            this._defn["objects"][buildConfig._id]["buildSettings"][key] = value;
-        }
-    }
     mergeTargets(other, newMainGroup, filePathPrefix) {
         const appTargets = [];
         this.copyOtherObjectsIntoSelf(other, filePathPrefix);
@@ -312,7 +296,7 @@ class PBXProj {
             const searchPaths = buildSettings["LD_RUNPATH_SEARCH_PATHS"];
             if (searchPaths instanceof Array) {
                 if (!searchPaths.includes("@executable_path/Frameworks")) {
-                    throw "Error! App runtime search paths don't include frameworks. This may indicate something is about to break.";
+                    throw Error("Error! App runtime search paths don't include frameworks. This may indicate something is about to break.");
                 }
                 buildSettings["LD_RUNPATH_SEARCH_PATHS"] = searchPaths.map((path) => {
                     if (path === "@executable_path/Frameworks") {
@@ -325,14 +309,14 @@ class PBXProj {
             }
             else if (typeof searchPaths === "string") {
                 if (!searchPaths.includes("@executable_path/Frameworks")) {
-                    throw "Error! App runtime search paths don't include frameworks. This may indicate something is about to break.";
+                    throw Error("Error! App runtime search paths don't include frameworks. This may indicate something is about to break.");
                 }
                 buildSettings["LD_RUNPATH_SEARCH_PATHS"] = searchPaths.replace("@executable_path/Frameworks", "@executable_path/Frameworks/" +
                     target.product().get("path") +
                     "/Frameworks");
             }
             else {
-                throw "Error! App runtime search paths are some undefined type (or simply undefined). This is not expected!";
+                throw Error("Error! App runtime search paths are some undefined type (or simply undefined). This is not expected!");
             }
             if (defaultConfigurationName === buildConfig.name()) {
                 const plist = buildSettings["INFOPLIST_FILE"].replace("$(SRCROOT)", this._srcRoot);
@@ -355,7 +339,7 @@ class PBXProj {
             }
         }
         if (!defaultBuildConfigDetails) {
-            throw "Error! No default config found!";
+            throw Error("Error! No default config found!");
         }
         return {
             frameworkName: frameworkInfo.frameworkName,
@@ -394,7 +378,7 @@ class PBXProj {
         // Get larget icon
         const rawContents = fs_extra_1.default.readFileSync(path.join(potentialAppIcons[0], "Contents.json"));
         const contents = JSON.parse(rawContents.toString());
-        for (let imageMetadata of contents["images"]) {
+        for (const imageMetadata of contents["images"]) {
             if (imageMetadata["idiom"] === "ios-marketing" &&
                 imageMetadata["filename"]) {
                 return path.join(potentialAppIcons[0], imageMetadata["filename"]);
@@ -415,11 +399,38 @@ class PBXProj {
         }
         return name;
     }
-    getTargetWithName(name) {
+    duplicateBuildConfig(buildConfig, project) {
+        const newObjID = utils_1.generateUUID(project.allObjectKeys());
+        const newObj = {};
+        Object.keys(buildConfig._defn).forEach((key) => {
+            newObj[key] = utils_1.deepCopy(buildConfig._defn[key]);
+        });
+        project._defn["objects"][newObjID] = newObj;
+        return new pbx_build_config_1.default(newObjID, project);
+    }
+    duplicateBuildConfigList(buildConfigList, project) {
+        const newObjID = utils_1.generateUUID(project.allObjectKeys());
+        const newObj = {};
+        Object.keys(buildConfigList._defn).forEach((key) => {
+            if (key === "buildConfigurations") {
+                newObj[key] = buildConfigList._defn[key].map((buildConfigId) => {
+                    return this.duplicateBuildConfig(new pbx_build_config_1.default(buildConfigId, this), project)._id;
+                });
+            }
+            else {
+                newObj[key] = utils_1.deepCopy(buildConfigList._defn[key]);
+            }
+        });
+        project._defn["objects"][newObjID] = newObj;
+        return new pbx_build_config_list_1.default(newObjID, project);
+    }
+    getTargetWithName(name, mustBeAppTarget) {
         const candidates = this.rootObject()
             .targets()
             .filter((target) => {
-            return target.name() === name;
+            return (target.name() === name &&
+                (!mustBeAppTarget ||
+                    target.productType() === "com.apple.product-type.application"));
         });
         if (candidates.length > 1) {
             console.log(chalk_1.default.yellow("Multiple targets detected for one name: " + name));
@@ -532,8 +543,7 @@ class PBXProj {
                 (isa === "XCBuildConfiguration" &&
                     ["baseConfigurationReference"].includes(objectKey)) ||
                 (isa === "PBXVariantGroup" && ["children"].includes(objectKey)) ||
-                (isa === "PBXShellScriptBuildPhase" &&
-                    ["files", "outputFileListPaths", "inputFileListPaths"].includes(objectKey)) ||
+                (isa === "PBXShellScriptBuildPhase" && ["files"].includes(objectKey)) ||
                 (isa === "PBXHeadersBuildPhase" && ["files"].includes(objectKey))) {
                 if (!potentialKey(objectValue, false)) {
                     console.log(chalk_1.default.yellow(`Potential overzelous key match during key replacement! "${objectValue}" ("${objectKey}" in "${isa}")`));

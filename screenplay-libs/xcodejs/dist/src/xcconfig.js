@@ -45,12 +45,12 @@ class XCConfig {
             else if (line.startsWith("#include")) {
                 const includeParse = XCCONFIG_INCLUDE.exec(line);
                 if (includeParse === null) {
-                    throw "Error! Not-understood include statement: '" + line + "'";
+                    throw Error("Error! Not-understood include statement: '" + line + "'");
                 }
                 const includeFilePath = path_1.default.join(path_1.default.dirname(file), includeParse[2]);
                 if (!fs.existsSync(includeFilePath)) {
                     if (includeParse[1] !== "?") {
-                        throw "Error! Missing include: " + includeFilePath;
+                        throw Error("Error! Missing include: " + includeFilePath);
                     }
                 }
                 else {
@@ -61,7 +61,7 @@ class XCConfig {
             else {
                 const variableAssignment = XCCONFIG_VAR_ASSIGNMENT.exec(line);
                 if (variableAssignment === null) {
-                    throw `Error! Not-understood line in xconfig (${file}): "${line}"`;
+                    throw Error(`Error! Not-understood line in xconfig (${file}): "${line}"`);
                 }
                 defn[variableAssignment[1]] = variableAssignment[2];
             }

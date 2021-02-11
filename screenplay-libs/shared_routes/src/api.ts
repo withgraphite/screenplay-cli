@@ -1,7 +1,13 @@
 import * as t from "retype";
 import { asRouteTree } from "./base";
+import { default as ff } from "./ff";
 
 const API_ROUTES = asRouteTree({
+  featureFlags: {
+    method: "GET",
+    url: "/feature-flags",
+    response: ff,
+  },
   health: {
     method: "GET",
     url: "/health",
@@ -26,6 +32,7 @@ const API_ROUTES = asRouteTree({
     upload: {
       method: "POST",
       url: "/app-secret/:appSecret/versions",
+      queryParams: {},
       urlParams: {
         appSecret: t.string,
       },
@@ -35,6 +42,7 @@ const API_ROUTES = asRouteTree({
         archs: t.array(t.string),
         isRelease: t.boolean,
         buildPhaseVersion: t.string,
+        kind: t.literals(["app", "source"] as const),
       },
       response: {
         id: t.string,
@@ -51,7 +59,7 @@ const API_ROUTES = asRouteTree({
     },
     downloadLatest: {
       method: "GET",
-      url: "/app-secret/:appSecret/version-bundles/",
+      url: "/app-secret/:appSecret/version-bundles",
       urlParams: {
         appSecret: t.string,
       },
@@ -60,7 +68,13 @@ const API_ROUTES = asRouteTree({
         maxSemver: t.string,
       },
       response: {
-        versionBundleUrls: t.array(t.string),
+        versionBundles: t.array(
+          t.shape({
+            id: t.string,
+            url: t.string,
+            kind: t.literals(["app", "source"] as const),
+          })
+        ),
       },
     },
     download: {
@@ -74,7 +88,9 @@ const API_ROUTES = asRouteTree({
         archs: t.string,
       },
       response: {
+        versionBundleId: t.string,
         versionBundleUrl: t.string,
+        versionBundleKind: t.literals(["app", "source"] as const),
       },
     },
   },
@@ -139,7 +155,7 @@ const API_ROUTES = asRouteTree({
         versions: t.array(
           t.shape({
             embeddedId: t.number,
-            semver: t.string,
+            id: t.string,
           })
         ),
       },
@@ -208,6 +224,27 @@ const API_ROUTES = asRouteTree({
             id: t.string,
             name: t.string,
             color: t.string,
+          })
+        ),
+      },
+    },
+    releaseAppOpens: {
+      method: "GET",
+      url: "/app/:appId/release/:releaseId/app-opens",
+      urlParams: {
+        appId: t.string,
+        releaseId: t.string,
+      },
+      response: {
+        datapoints: t.array(
+          t.shape({
+            time: t.number,
+            versions: t.array(
+              t.shape({
+                id: t.string,
+                appOpens: t.number,
+              })
+            ),
           })
         ),
       },
@@ -461,6 +498,63 @@ const API_ROUTES = asRouteTree({
             depth: t.number,
           })
         ),
+      },
+    },
+  },
+  blogs: {
+    page: {
+      method: "GET",
+      url: "/blog/post/:id",
+      urlParams: {
+        id: t.string,
+      },
+      response: {
+        title: t.string,
+        text: t.string,
+        published: t.boolean,
+        createdAt: t.number,
+        wordCount: t.number,
+      },
+    },
+    pages: {
+      method: "GET",
+      url: "/blog/posts",
+      response: {
+        pages: t.array(
+          t.shape({
+            id: t.string,
+            title: t.string,
+            published: t.boolean,
+            createdAt: t.number,
+            wordCount: t.number,
+          })
+        ),
+      },
+    },
+    createPage: {
+      method: "POST",
+      url: "/blog/posts",
+      response: {
+        id: t.string,
+      },
+    },
+    editPage: {
+      method: "PUT",
+      url: "/blog/post/:id",
+      urlParams: {
+        id: t.string,
+      },
+      params: {
+        title: t.string,
+        text: t.string,
+        published: t.boolean,
+      },
+    },
+    deletePage: {
+      method: "DELETE",
+      url: "/blog/post/:id",
+      urlParams: {
+        id: t.string,
       },
     },
   },

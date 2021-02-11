@@ -16,6 +16,7 @@ import PBXRootObject from "./src/pbx_root_object";
 import PBXTargetDependency from "./src/pbx_target_dependency";
 import PBXTargetProxy from "./src/pbx_target_proxy";
 import { Plist } from "./src/plist";
+import * as PorkspaceType from "./src/porkspace_type";
 import * as Utils from "./src/utils";
 import { XCConfig } from "./src/xcconfig";
 import * as XCSchemes from "./src/xcschemes";
@@ -47,3 +48,5 @@ export {
   DestinationType,
   destinationString,
 };
+
+export type PorkspacePath = PorkspaceType.PorkspacePath;

@@ -1,5 +1,14 @@
 import * as t from "retype";
 declare const API_ROUTES: {
+    readonly featureFlags: {
+        readonly method: "GET";
+        readonly url: "/feature-flags";
+        readonly response: {
+            killswitch: t.BooleanType;
+            killswitchReason: t.StringType;
+            rotoscopeKillswitch: t.BooleanType;
+        };
+    };
     readonly health: {
         readonly method: "GET";
         readonly url: "/health";
@@ -24,6 +33,7 @@ declare const API_ROUTES: {
         readonly upload: {
             readonly method: "POST";
             readonly url: "/app-secret/:appSecret/versions";
+            readonly queryParams: {};
             readonly urlParams: {
                 readonly appSecret: t.StringType;
             };
@@ -33,6 +43,7 @@ declare const API_ROUTES: {
                 readonly archs: t.ArrayType<string>;
                 readonly isRelease: t.BooleanType;
                 readonly buildPhaseVersion: t.StringType;
+                readonly kind: t.PluralUnionType<t.LiteralType<"source" | "app">, "source" | "app">;
             };
             readonly response: {
                 readonly id: t.StringType;
@@ -49,7 +60,7 @@ declare const API_ROUTES: {
         };
         readonly downloadLatest: {
             readonly method: "GET";
-            readonly url: "/app-secret/:appSecret/version-bundles/";
+            readonly url: "/app-secret/:appSecret/version-bundles";
             readonly urlParams: {
                 readonly appSecret: t.StringType;
             };
@@ -58,7 +69,11 @@ declare const API_ROUTES: {
                 readonly maxSemver: t.StringType;
             };
             readonly response: {
-                readonly versionBundleUrls: t.ArrayType<string>;
+                readonly versionBundles: t.ArrayType<{
+                    id: string;
+                    url: string;
+                    kind: "source" | "app";
+                }>;
             };
         };
         readonly download: {
@@ -72,7 +87,9 @@ declare const API_ROUTES: {
                 readonly archs: t.StringType;
             };
             readonly response: {
+                readonly versionBundleId: t.StringType;
                 readonly versionBundleUrl: t.StringType;
+                readonly versionBundleKind: t.PluralUnionType<t.LiteralType<"source" | "app">, "source" | "app">;
             };
         };
     };
@@ -138,7 +155,7 @@ declare const API_ROUTES: {
             readonly params: {
                 readonly versions: t.ArrayType<{
                     embeddedId: number;
-                    semver: string;
+                    id: string;
                 }>;
             };
             readonly response: {
@@ -206,6 +223,23 @@ declare const API_ROUTES: {
                     id: string;
                     name: string;
                     color: string;
+                }>;
+            };
+        };
+        readonly releaseAppOpens: {
+            readonly method: "GET";
+            readonly url: "/app/:appId/release/:releaseId/app-opens";
+            readonly urlParams: {
+                readonly appId: t.StringType;
+                readonly releaseId: t.StringType;
+            };
+            readonly response: {
+                readonly datapoints: t.ArrayType<{
+                    time: number;
+                    versions: {
+                        id: string;
+                        appOpens: number;
+                    }[];
                 }>;
             };
         };
@@ -419,6 +453,61 @@ declare const API_ROUTES: {
                     title: string | null;
                     depth: number;
                 }>;
+            };
+        };
+    };
+    readonly blogs: {
+        readonly page: {
+            readonly method: "GET";
+            readonly url: "/blog/post/:id";
+            readonly urlParams: {
+                readonly id: t.StringType;
+            };
+            readonly response: {
+                readonly title: t.StringType;
+                readonly text: t.StringType;
+                readonly published: t.BooleanType;
+                readonly createdAt: t.NumberType;
+                readonly wordCount: t.NumberType;
+            };
+        };
+        readonly pages: {
+            readonly method: "GET";
+            readonly url: "/blog/posts";
+            readonly response: {
+                readonly pages: t.ArrayType<{
+                    id: string;
+                    title: string;
+                    published: boolean;
+                    createdAt: number;
+                    wordCount: number;
+                }>;
+            };
+        };
+        readonly createPage: {
+            readonly method: "POST";
+            readonly url: "/blog/posts";
+            readonly response: {
+                readonly id: t.StringType;
+            };
+        };
+        readonly editPage: {
+            readonly method: "PUT";
+            readonly url: "/blog/post/:id";
+            readonly urlParams: {
+                readonly id: t.StringType;
+            };
+            readonly params: {
+                readonly title: t.StringType;
+                readonly text: t.StringType;
+                readonly published: t.BooleanType;
+            };
+        };
+        readonly deletePage: {
+            readonly method: "DELETE";
+            readonly url: "/blog/post/:id";
+            readonly urlParams: {
+                readonly id: t.StringType;
             };
         };
     };

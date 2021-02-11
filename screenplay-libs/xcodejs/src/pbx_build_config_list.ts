@@ -18,4 +18,11 @@ export default class PBXBuildConfigList extends PBXObject {
       return new PBXBuildConfig(buildConfigId, this._proj);
     });
   }
+
+  setValueForAll(key: string, value: any) {
+    const appTargetBuildConfigs = this.buildConfigs();
+    for (const buildConfig of appTargetBuildConfigs) {
+      buildConfig.buildSettings()[key] = value;
+    }
+  }
 }

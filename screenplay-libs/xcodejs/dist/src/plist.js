@@ -17,6 +17,11 @@ class Plist {
         const defn = JSON.parse(data.toString());
         return new Plist(defn);
     }
+    static fromString(str) {
+        const data = child_process_1.execSync(`plutil -convert json -o - -- -`, { input: str });
+        const defn = JSON.parse(data.toString());
+        return new Plist(defn);
+    }
     get(key) {
         return this._defn[key];
     }
@@ -45,7 +50,7 @@ class Plist {
     static mergeKeyFromOthers(key, values, overrideList) {
         // If override value, take the newest value.
         if (overrideList.includes(key)) {
-            const newestVal = values[0];
+            const newestVal = values[0]; // Risky ordering assumption
             return newestVal;
         }
         // No specific handler found, assuming they must all be identical

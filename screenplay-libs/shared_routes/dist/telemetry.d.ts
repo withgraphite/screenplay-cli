@@ -24,6 +24,7 @@ declare const API_ROUTES: {
             readonly message: t.StringType;
             readonly stack: t.StringType;
             readonly argv: t.ArrayType<string>;
+            readonly appSecret: t.UnionType<string, undefined>;
         };
     };
     readonly cli: {

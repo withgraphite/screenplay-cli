@@ -18,10 +18,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const t = __importStar(require("retype"));
 const base_1 = require("./base");
+const ff_1 = __importDefault(require("./ff"));
 const API_ROUTES = base_1.asRouteTree({
+    featureFlags: {
+        method: "GET",
+        url: "/feature-flags",
+        response: ff_1.default,
+    },
     health: {
         method: "GET",
         url: "/health",
@@ -46,6 +55,7 @@ const API_ROUTES = base_1.asRouteTree({
         upload: {
             method: "POST",
             url: "/app-secret/:appSecret/versions",
+            queryParams: {},
             urlParams: {
                 appSecret: t.string,
             },
@@ -55,6 +65,7 @@ const API_ROUTES = base_1.asRouteTree({
                 archs: t.array(t.string),
                 isRelease: t.boolean,
                 buildPhaseVersion: t.string,
+                kind: t.literals(["app", "source"]),
             },
             response: {
                 id: t.string,
@@ -71,7 +82,7 @@ const API_ROUTES = base_1.asRouteTree({
         },
         downloadLatest: {
             method: "GET",
-            url: "/app-secret/:appSecret/version-bundles/",
+            url: "/app-secret/:appSecret/version-bundles",
             urlParams: {
                 appSecret: t.string,
             },
@@ -80,7 +91,11 @@ const API_ROUTES = base_1.asRouteTree({
                 maxSemver: t.string,
             },
             response: {
-                versionBundleUrls: t.array(t.string),
+                versionBundles: t.array(t.shape({
+                    id: t.string,
+                    url: t.string,
+                    kind: t.literals(["app", "source"]),
+                })),
             },
         },
         download: {
@@ -94,7 +109,9 @@ const API_ROUTES = base_1.asRouteTree({
                 archs: t.string,
             },
             response: {
+                versionBundleId: t.string,
                 versionBundleUrl: t.string,
+                versionBundleKind: t.literals(["app", "source"]),
             },
         },
     },
@@ -158,7 +175,7 @@ const API_ROUTES = base_1.asRouteTree({
             params: {
                 versions: t.array(t.shape({
                     embeddedId: t.number,
-                    semver: t.string,
+                    id: t.string,
                 })),
             },
             response: {
@@ -221,6 +238,23 @@ const API_ROUTES = base_1.asRouteTree({
                     id: t.string,
                     name: t.string,
                     color: t.string,
+                })),
+            },
+        },
+        releaseAppOpens: {
+            method: "GET",
+            url: "/app/:appId/release/:releaseId/app-opens",
+            urlParams: {
+                appId: t.string,
+                releaseId: t.string,
+            },
+            response: {
+                datapoints: t.array(t.shape({
+                    time: t.number,
+                    versions: t.array(t.shape({
+                        id: t.string,
+                        appOpens: t.number,
+                    })),
                 })),
             },
         },
@@ -445,6 +479,61 @@ const API_ROUTES = base_1.asRouteTree({
                     title: t.nullable(t.string),
                     depth: t.number,
                 })),
+            },
+        },
+    },
+    blogs: {
+        page: {
+            method: "GET",
+            url: "/blog/post/:id",
+            urlParams: {
+                id: t.string,
+            },
+            response: {
+                title: t.string,
+                text: t.string,
+                published: t.boolean,
+                createdAt: t.number,
+                wordCount: t.number,
+            },
+        },
+        pages: {
+            method: "GET",
+            url: "/blog/posts",
+            response: {
+                pages: t.array(t.shape({
+                    id: t.string,
+                    title: t.string,
+                    published: t.boolean,
+                    createdAt: t.number,
+                    wordCount: t.number,
+                })),
+            },
+        },
+        createPage: {
+            method: "POST",
+            url: "/blog/posts",
+            response: {
+                id: t.string,
+            },
+        },
+        editPage: {
+            method: "PUT",
+            url: "/blog/post/:id",
+            urlParams: {
+                id: t.string,
+            },
+            params: {
+                title: t.string,
+                text: t.string,
+                published: t.boolean,
+            },
+        },
+        deletePage: {
+            method: "DELETE",
+            url: "/blog/post/:id",
+            urlParams: {
+                id: t.string,
             },
         },
     },

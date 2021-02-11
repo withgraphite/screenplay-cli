@@ -10,7 +10,7 @@ export declare abstract class Schema<TInner> {
 }
 export declare type TypeOf<A extends Schema<unknown>> = A["_TInner"];
 export declare type UnwrapSchemaMap<TSchemaMap> = keyof TSchemaMap extends never ? {
-    [K in any]: never;
+    [K in any]: undefined;
 } : {
     [SchemaMapIndex in keyof TSchemaMap]: TSchemaMap[SchemaMapIndex] extends Schema<unknown> ? TypeOf<TSchemaMap[SchemaMapIndex]> : never;
 };

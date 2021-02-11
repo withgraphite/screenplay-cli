@@ -8,7 +8,7 @@ export class XCConfig {
   _defn: { [key: string]: any };
   _path: string;
 
-  constructor(defn: {}, path: string) {
+  constructor(defn: Record<string, unknown>, path: string) {
     this._defn = defn;
     this._path = path;
   }
@@ -26,7 +26,9 @@ export class XCConfig {
           const includeParse = XCCONFIG_INCLUDE.exec(line);
 
           if (includeParse === null) {
-            throw "Error! Not-understood include statement: '" + line + "'";
+            throw Error(
+              "Error! Not-understood include statement: '" + line + "'"
+            );
           }
 
           const includeFilePath = path.join(
@@ -36,7 +38,7 @@ export class XCConfig {
 
           if (!fs.existsSync(includeFilePath)) {
             if (includeParse[1] !== "?") {
-              throw "Error! Missing include: " + includeFilePath;
+              throw Error("Error! Missing include: " + includeFilePath);
             }
           } else {
             const subFile = XCConfig.fromFile(includeFilePath);
@@ -49,7 +51,9 @@ export class XCConfig {
           const variableAssignment = XCCONFIG_VAR_ASSIGNMENT.exec(line);
 
           if (variableAssignment === null) {
-            throw `Error! Not-understood line in xconfig (${file}): "${line}"`;
+            throw Error(
+              `Error! Not-understood line in xconfig (${file}): "${line}"`
+            );
           }
           defn[variableAssignment[1]] = variableAssignment[2];
         }

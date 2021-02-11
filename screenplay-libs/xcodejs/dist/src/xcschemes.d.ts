@@ -1,8 +1,14 @@
 import PBXNativeTarget from "./pbx_native_target";
-export declare function schemeExists(projectPath: string, schemeName: string): boolean;
-export declare function schemesAutomaticallyManaged(projectPath: string): boolean;
+import { PorkspacePath } from "./porkspace_type";
+export declare function list(porkspacePath: PorkspacePath): string[];
+export declare function findSrcSchemePath(opts: {
+    projectPath: string;
+    workspacePath?: string;
+    schemeName: string;
+}): string | undefined;
 export declare function createSchema(opts: {
     projectPath: string;
+    workspacePath?: string;
     srcSchemeName: string;
     srcAppTarget: PBXNativeTarget;
     newBuildTarget: PBXNativeTarget;
@@ -10,7 +16,9 @@ export declare function createSchema(opts: {
 }): string;
 export declare function addTests(opts: {
     projectPath: string;
+    workspacePath?: string;
     appScheme: string;
     nativeTargetID: string;
+    testTargetName: string;
     xcodeFileName: string;
 }): void;

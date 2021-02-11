@@ -8,7 +8,7 @@ type BundleInfo = {
   bundleExecutable: string;
 };
 
-export function deepCopy(obj: {}) {
+export function deepCopy(obj: Record<string, unknown>) {
   // I don't like it either, but this remains one of the fastest ways to
   // deep copy an obj in JS
   return JSON.parse(JSON.stringify(obj));

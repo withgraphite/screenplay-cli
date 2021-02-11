@@ -18,6 +18,12 @@ class PBXBuildConfigList extends pbx_object_1.default {
             return new pbx_build_config_1.default(buildConfigId, this._proj);
         });
     }
+    setValueForAll(key, value) {
+        const appTargetBuildConfigs = this.buildConfigs();
+        for (const buildConfig of appTargetBuildConfigs) {
+            buildConfig.buildSettings()[key] = value;
+        }
+    }
 }
 exports.default = PBXBuildConfigList;
 //# sourceMappingURL=pbx_build_config_list.js.map

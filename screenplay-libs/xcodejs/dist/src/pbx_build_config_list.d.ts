@@ -4,4 +4,5 @@ export default class PBXBuildConfigList extends PBXObject {
     defaultConfigurationName(): any;
     defaultConfig(): PBXBuildConfig;
     buildConfigs(): ReadonlyArray<PBXBuildConfig>;
+    setValueForAll(key: string, value: any): void;
 }
