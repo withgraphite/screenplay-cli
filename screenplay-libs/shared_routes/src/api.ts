@@ -26,6 +26,7 @@ const API_ROUTES = asRouteTree({
     upload: {
       method: "POST",
       url: "/app-secret/:appSecret/versions",
+      queryParams: {},
       urlParams: {
         appSecret: t.string,
       },
@@ -208,6 +209,27 @@ const API_ROUTES = asRouteTree({
             id: t.string,
             name: t.string,
             color: t.string,
+          })
+        ),
+      },
+    },
+    releaseAppOpens: {
+      method: "GET",
+      url: "/app/:appId/release/:releaseId/app-opens",
+      urlParams: {
+        appId: t.string,
+        releaseId: t.string,
+      },
+      response: {
+        datapoints: t.array(
+          t.shape({
+            time: t.number,
+            versions: t.array(
+              t.shape({
+                id: t.string,
+                appOpens: t.number,
+              })
+            ),
           })
         ),
       },
@@ -461,6 +483,63 @@ const API_ROUTES = asRouteTree({
             depth: t.number,
           })
         ),
+      },
+    },
+  },
+  blogs: {
+    page: {
+      method: "GET",
+      url: "/blog/post/:id",
+      urlParams: {
+        id: t.string,
+      },
+      response: {
+        title: t.string,
+        text: t.string,
+        published: t.boolean,
+        createdAt: t.number,
+        wordCount: t.number,
+      },
+    },
+    pages: {
+      method: "GET",
+      url: "/blog/posts",
+      response: {
+        pages: t.array(
+          t.shape({
+            id: t.string,
+            title: t.string,
+            published: t.boolean,
+            createdAt: t.number,
+            wordCount: t.number,
+          })
+        ),
+      },
+    },
+    createPage: {
+      method: "POST",
+      url: "/blog/posts",
+      response: {
+        id: t.string,
+      },
+    },
+    editPage: {
+      method: "PUT",
+      url: "/blog/post/:id",
+      urlParams: {
+        id: t.string,
+      },
+      params: {
+        title: t.string,
+        text: t.string,
+        published: t.boolean,
+      },
+    },
+    deletePage: {
+      method: "DELETE",
+      url: "/blog/post/:id",
+      urlParams: {
+        id: t.string,
       },
     },
   },

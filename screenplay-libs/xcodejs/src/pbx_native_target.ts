@@ -44,6 +44,17 @@ export default class PBXNativeTarget extends PBXObject {
     );
   }
 
+  buildConfiguration(name: string) {
+    const config = this.buildConfigurationList()
+      .buildConfigs()
+      .find((config) => config.name() == name);
+    if (!config) {
+      throw Error(`Failed to find build configuration ${name}`);
+    }
+
+    return config;
+  }
+
   defaultConfigurationName(): string {
     return this._defn["defaultConfigurationName"];
   }

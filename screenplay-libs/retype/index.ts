@@ -22,7 +22,7 @@ export type TypeOf<A extends Schema<unknown>> = A["_TInner"];
 
 export type UnwrapSchemaMap<TSchemaMap> = keyof TSchemaMap extends never
   ? {
-      [K in any]: never;
+      [K in any]: undefined;
     }
   : {
       [SchemaMapIndex in keyof TSchemaMap]: TSchemaMap[SchemaMapIndex] extends Schema<unknown>

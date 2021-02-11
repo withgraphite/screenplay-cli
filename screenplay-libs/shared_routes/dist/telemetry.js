@@ -46,6 +46,7 @@ const API_ROUTES = base_1.asRouteTree({
             message: t.string,
             stack: t.string,
             argv: t.array(t.string),
+            appSecret: t.optional(t.string),
         },
     },
     cli: {

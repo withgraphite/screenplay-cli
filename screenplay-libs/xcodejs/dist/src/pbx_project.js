@@ -194,7 +194,7 @@ class PBXProj {
                 // TODO: This will become a shoddy assumption soon, b/c if we're merging different
                 // versions of the same project, it WILL have the same UUIDs; we should
                 // prolly have some way to rename them and replace the UUIDs
-                throw ("Duplicate UUIDs detected ('" +
+                throw Error("Duplicate UUIDs detected ('" +
                     id +
                     "')! Are you trying to merge a file into itself?");
             }
@@ -261,23 +261,6 @@ class PBXProj {
         this.patchBuildPaths(target, filePathPrefix);
         this.patchBuildConfigValuesForTarget(target, filePathPrefix);
     }
-    getApplicationBuildSetting(key) {
-        // Just grab the version of the first buildConfig (usually just debug and release)
-        return this.rootObject()
-            .applicationTargets()[0]
-            .buildConfigurationList()
-            .buildConfigs()[0]
-            .get("buildSettings")[key];
-    }
-    setApplicationBuildSetting(key, value) {
-        const appTargetBuildConfigs = this.rootObject()
-            .applicationTargets()[0]
-            .buildConfigurationList()
-            .buildConfigs();
-        for (const buildConfig of appTargetBuildConfigs) {
-            this._defn["objects"][buildConfig._id]["buildSettings"][key] = value;
-        }
-    }
     mergeTargets(other, newMainGroup, filePathPrefix) {
         const appTargets = [];
         this.copyOtherObjectsIntoSelf(other, filePathPrefix);
@@ -312,7 +295,7 @@ class PBXProj {
             const searchPaths = buildSettings["LD_RUNPATH_SEARCH_PATHS"];
             if (searchPaths instanceof Array) {
                 if (!searchPaths.includes("@executable_path/Frameworks")) {
-                    throw "Error! App runtime search paths don't include frameworks. This may indicate something is about to break.";
+                    throw Error("Error! App runtime search paths don't include frameworks. This may indicate something is about to break.");
                 }
                 buildSettings["LD_RUNPATH_SEARCH_PATHS"] = searchPaths.map((path) => {
                     if (path === "@executable_path/Frameworks") {
@@ -325,14 +308,14 @@ class PBXProj {
             }
             else if (typeof searchPaths === "string") {
                 if (!searchPaths.includes("@executable_path/Frameworks")) {
-                    throw "Error! App runtime search paths don't include frameworks. This may indicate something is about to break.";
+                    throw Error("Error! App runtime search paths don't include frameworks. This may indicate something is about to break.");
                 }
                 buildSettings["LD_RUNPATH_SEARCH_PATHS"] = searchPaths.replace("@executable_path/Frameworks", "@executable_path/Frameworks/" +
                     target.product().get("path") +
                     "/Frameworks");
             }
             else {
-                throw "Error! App runtime search paths are some undefined type (or simply undefined). This is not expected!";
+                throw Error("Error! App runtime search paths are some undefined type (or simply undefined). This is not expected!");
             }
             if (defaultConfigurationName === buildConfig.name()) {
                 const plist = buildSettings["INFOPLIST_FILE"].replace("$(SRCROOT)", this._srcRoot);
@@ -355,7 +338,7 @@ class PBXProj {
             }
         }
         if (!defaultBuildConfigDetails) {
-            throw "Error! No default config found!";
+            throw Error("Error! No default config found!");
         }
         return {
             frameworkName: frameworkInfo.frameworkName,
@@ -415,11 +398,13 @@ class PBXProj {
         }
         return name;
     }
-    getTargetWithName(name) {
+    getTargetWithName(name, mustBeAppTarget) {
         const candidates = this.rootObject()
             .targets()
             .filter((target) => {
-            return target.name() === name;
+            return (target.name() === name &&
+                (!mustBeAppTarget ||
+                    target.productType() === "com.apple.product-type.application"));
         });
         if (candidates.length > 1) {
             console.log(chalk_1.default.yellow("Multiple targets detected for one name: " + name));
@@ -532,8 +517,7 @@ class PBXProj {
                 (isa === "XCBuildConfiguration" &&
                     ["baseConfigurationReference"].includes(objectKey)) ||
                 (isa === "PBXVariantGroup" && ["children"].includes(objectKey)) ||
-                (isa === "PBXShellScriptBuildPhase" &&
-                    ["files", "outputFileListPaths", "inputFileListPaths"].includes(objectKey)) ||
+                (isa === "PBXShellScriptBuildPhase" && ["files"].includes(objectKey)) ||
                 (isa === "PBXHeadersBuildPhase" && ["files"].includes(objectKey))) {
                 if (!potentialKey(objectValue, false)) {
                     console.log(chalk_1.default.yellow(`Potential overzelous key match during key replacement! "${objectValue}" ("${objectKey}" in "${isa}")`));

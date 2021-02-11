@@ -3,52 +3,57 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addTests = exports.createSchema = exports.schemesAutomaticallyManaged = exports.schemeExists = void 0;
+exports.addTests = exports.createSchema = exports.findSrcSchemePath = exports.list = void 0;
+const child_process_1 = require("child_process");
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
 const xml_js_1 = __importDefault(require("xml-js"));
-function schemeExists(projectPath, schemeName) {
-    const schemesFolder = path_1.default.join(projectPath, "xcshareddata", "xcschemes");
-    const appSchemePath = path_1.default.join(schemesFolder, schemeName + ".xcscheme");
-    return fs_extra_1.default.existsSync(schemesFolder) && fs_extra_1.default.existsSync(appSchemePath);
+function list(porkspacePath) {
+    const xcodeBuildOutput = JSON.parse(child_process_1.execSync(`xcodebuild ${porkspacePath.workspace
+        ? `-workspace "${porkspacePath.workspace}"`
+        : `-project "${porkspacePath.project}"`} -list -json`).toString());
+    return (xcodeBuildOutput["project"] || xcodeBuildOutput["workspace"])["schemes"];
 }
-exports.schemeExists = schemeExists;
-function schemesAutomaticallyManaged(projectPath) {
-    // TODO: We can likely do better by actually inspecting the project attributes in xcode... we'll worry about that later
-    const schemesFolder = path_1.default.join(projectPath, "xcshareddata", "xcschemes");
-    return !fs_extra_1.default.existsSync(schemesFolder);
+exports.list = list;
+function findSrcSchemePath(opts) {
+    return [opts.projectPath]
+        .concat(opts.workspacePath ? [opts.workspacePath] : [])
+        .map((containerPath) => path_1.default.join(containerPath, "xcshareddata", "xcschemes", `${opts.schemeName}.xcscheme`))
+        .find(fs_extra_1.default.existsSync);
 }
-exports.schemesAutomaticallyManaged = schemesAutomaticallyManaged;
+exports.findSrcSchemePath = findSrcSchemePath;
 function createSchema(opts) {
-    const schemesFolder = path_1.default.join(opts.projectPath, "xcshareddata", "xcschemes");
-    if (fs_extra_1.default.existsSync(schemesFolder)) {
-        const appSchemePath = path_1.default.join(schemesFolder, opts.srcSchemeName + ".xcscheme");
-        const newSchemeName = opts.buildableNameExtension === "framework"
-            ? `Screenplay-Framework-${opts.srcSchemeName}`
-            : `Screenplay-${opts.srcSchemeName}`;
-        if (opts.buildableNameExtension === "app") {
-            fs_extra_1.default.writeFileSync(path_1.default.join(schemesFolder, `${newSchemeName}.xcscheme`), createAppScheme(`${opts.newBuildTarget.name()}.${opts.buildableNameExtension}`, opts.newBuildTarget.name(), opts.newBuildTarget._id, path_1.default.basename(opts.projectPath)));
-            return newSchemeName;
-        }
-        else if (fs_extra_1.default.existsSync(appSchemePath)) {
-            const data = fs_extra_1.default.readFileSync(appSchemePath);
-            const defn = xml_js_1.default.xml2js(data.toString(), { compact: true });
-            recursivelyMutateBuildRefs({
-                defn: defn,
-                buildableName: `${opts.newBuildTarget.name()}.${opts.buildableNameExtension}`,
-                blueprintName: opts.newBuildTarget.name(),
-                blueprintIdentifier: opts.newBuildTarget._id,
-                originalBlueprintIdentifier: opts.srcAppTarget._id,
-                projectPath: opts.projectPath,
-            });
-            fs_extra_1.default.writeFileSync(path_1.default.join(schemesFolder, `${newSchemeName}.xcscheme`), xml_js_1.default.js2xml(defn, { compact: true }));
-            return newSchemeName;
-        }
-        else {
-            throw new Error(`XCSchemes found but could not find scheme ${opts.srcSchemeName}`);
-        }
+    const srcSchemePath = findSrcSchemePath({
+        projectPath: opts.projectPath,
+        workspacePath: opts.workspacePath,
+        schemeName: opts.srcSchemeName,
+    });
+    if (!srcSchemePath) {
+        throw Error(`Unable to find scheme ${opts.srcSchemeName}`);
     }
-    throw new Error(`No XCSchemes folder found at ${schemesFolder}`);
+    const newSchemeName = opts.buildableNameExtension === "framework"
+        ? `Screenplay-Framework-${opts.srcSchemeName}`
+        : `Screenplay-${opts.srcSchemeName}`;
+    if (opts.buildableNameExtension === "app") {
+        // Make an app scheme
+        fs_extra_1.default.writeFileSync(path_1.default.join(path_1.default.dirname(srcSchemePath), `${newSchemeName}.xcscheme`), createAppScheme(`${opts.newBuildTarget.name()}.${opts.buildableNameExtension}`, opts.newBuildTarget.name(), opts.newBuildTarget._id, path_1.default.basename(opts.projectPath)));
+        return newSchemeName;
+    }
+    else {
+        // Make a frameworks scheme
+        const data = fs_extra_1.default.readFileSync(srcSchemePath);
+        const defn = xml_js_1.default.xml2js(data.toString(), { compact: true });
+        recursivelyMutateBuildRefs({
+            defn: defn,
+            buildableName: `${opts.newBuildTarget.name()}.${opts.buildableNameExtension}`,
+            blueprintName: opts.newBuildTarget.name(),
+            blueprintIdentifier: opts.newBuildTarget._id,
+            originalBlueprintIdentifier: opts.srcAppTarget._id,
+            projectPath: opts.projectPath,
+        });
+        fs_extra_1.default.writeFileSync(path_1.default.join(path_1.default.dirname(srcSchemePath), `${newSchemeName}.xcscheme`), xml_js_1.default.js2xml(defn, { compact: true }));
+        return newSchemeName;
+    }
 }
 exports.createSchema = createSchema;
 function createAppScheme(buildableName, blueprintName, blueprintIdentifier, container) {
@@ -120,26 +125,24 @@ function recursivelyMutateBuildRefs(options) {
         }
     });
 }
-function validateSchemePath(projectPath, appScheme) {
-    const schemesFolder = path_1.default.join(projectPath, "xcshareddata", "xcschemes");
-    if (!fs_extra_1.default.existsSync(schemesFolder)) {
-        throw new Error(`No XCSchemes folder found at ${schemesFolder}`);
-    }
-    const appSchemePath = path_1.default.join(schemesFolder, `${appScheme}.xcscheme`);
-    if (!fs_extra_1.default.existsSync(appSchemePath)) {
-        throw new Error(`XCSchemes found but could not find a scheme for the scheme ("${appScheme}")`);
-    }
-}
 function addTests(opts) {
-    if (schemesAutomaticallyManaged(opts.projectPath)) {
-        return;
+    const appSchemePath = findSrcSchemePath({
+        projectPath: opts.projectPath,
+        schemeName: opts.appScheme,
+        workspacePath: opts.workspacePath,
+    });
+    if (!appSchemePath) {
+        throw Error(`Failed to find scheme ${opts.appScheme}`);
     }
-    validateSchemePath(opts.projectPath, opts.appScheme);
-    const schemesFolder = path_1.default.join(opts.projectPath, "xcshareddata", "xcschemes");
-    const appSchemePath = path_1.default.join(schemesFolder, `${opts.appScheme}.xcscheme`);
     const data = fs_extra_1.default.readFileSync(appSchemePath);
     const defn = xml_js_1.default.xml2js(data.toString(), { compact: true });
-    defn["Scheme"]["TestAction"]["Testables"]["TestableReference"] = [];
+    if (!Array.isArray(defn["Scheme"]["TestAction"]["Testables"]["TestableReference"])) {
+        const oldValue = defn["Scheme"]["TestAction"]["Testables"]["TestableReference"];
+        defn["Scheme"]["TestAction"]["Testables"]["TestableReference"] = [];
+        if (oldValue) {
+            defn["Scheme"]["TestAction"]["Testables"]["TestableReference"].push(oldValue);
+        }
+    }
     defn["Scheme"]["TestAction"]["Testables"]["TestableReference"].push({
         _attributes: {
             skipped: "NO",
@@ -148,8 +151,8 @@ function addTests(opts) {
             _attributes: {
                 BuildableIdentifier: "primary",
                 BlueprintIdentifier: opts.nativeTargetID,
-                BuildableName: "ScreenplayUITests.xctest",
-                BlueprintName: "ScreenplayUITests",
+                BuildableName: `${opts.testTargetName}.xctest`,
+                BlueprintName: opts.testTargetName,
                 ReferencedContainer: "container:" + opts.xcodeFileName,
             },
         },

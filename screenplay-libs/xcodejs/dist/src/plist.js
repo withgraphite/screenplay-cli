@@ -45,7 +45,7 @@ class Plist {
     static mergeKeyFromOthers(key, values, overrideList) {
         // If override value, take the newest value.
         if (overrideList.includes(key)) {
-            const newestVal = values[0];
+            const newestVal = values[0]; // Risky ordering assumption
             return newestVal;
         }
         // No specific handler found, assuming they must all be identical

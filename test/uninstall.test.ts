@@ -7,7 +7,7 @@ import tmp from "tmp";
 import { PBXProject } from "xcodejs";
 
 describe("uninstall_clears_install", function () {
-  it("uninstall_clears_install", (done) => {
+  it("uninstalls correctly on blank app", (done) => {
     const appDir = tmp.dirSync({ keep: false });
     fs.copySync(
       path.join(__dirname, "resources/blank-objc-storyboard"),
@@ -21,16 +21,46 @@ describe("uninstall_clears_install", function () {
 
     const preinstallProject = PBXProject.readFileSync(xcodeprojProjectDir);
 
-    process.chdir(path.join(__dirname, ".."));
     execSync(
-      `yarn cli install --appToken FAKE_TOKEN --xcode-project "${xcodeprojDir}"`,
+      `yarn --cwd .. cli install --appToken FAKE_TOKEN --xcode-project "${xcodeprojDir}"`,
       { stdio: "inherit" }
     );
-    execSync(`yarn cli uninstall "${xcodeprojDir}"`, { stdio: "inherit" });
+    execSync(`yarn --cwd .. cli uninstall "${xcodeprojDir}"`, {
+      stdio: "inherit",
+    });
 
     const postinstallProject = PBXProject.readFileSync(xcodeprojProjectDir);
 
     expect(postinstallProject._defn).to.deep.equal(preinstallProject._defn);
+
+    fs.emptyDirSync(appDir.name);
+    appDir.removeCallback();
+    done();
+  }).timeout(10000);
+
+  it("uninstalls correctly on lover", (done) => {
+    const appDir = tmp.dirSync({ keep: false });
+    fs.copySync(path.join(__dirname, "resources/lover"), appDir.name);
+
+    execSync(
+      `yarn --cwd .. cli uninstall "${path.join(
+        appDir.name,
+        "installed/lover-iphone.xcodeproj"
+      )}"`,
+      {
+        stdio: "inherit",
+      }
+    );
+    const preInstallProject = PBXProject.readFileSync(
+      path.join(appDir.name, "original/lover-iphone.xcodeproj/project.pbxproj")
+    );
+    const postInstallProject = PBXProject.readFileSync(
+      path.join(appDir.name, "installed/lover-iphone.xcodeproj/project.pbxproj")
+    );
+    expect(postInstallProject._defn).to.deep.equal(preInstallProject._defn);
+
+    fs.emptyDirSync(appDir.name);
+    appDir.removeCallback();
     done();
   }).timeout(10000);
 });

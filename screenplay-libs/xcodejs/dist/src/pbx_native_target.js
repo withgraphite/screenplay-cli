@@ -37,6 +37,15 @@ class PBXNativeTarget extends pbx_object_1.default {
     buildConfigurationList() {
         return new pbx_build_config_list_1.default(this._defn["buildConfigurationList"], this._proj);
     }
+    buildConfiguration(name) {
+        const config = this.buildConfigurationList()
+            .buildConfigs()
+            .find((config) => config.name() == name);
+        if (!config) {
+            throw Error(`Failed to find build configuration ${name}`);
+        }
+        return config;
+    }
     defaultConfigurationName() {
         return this._defn["defaultConfigurationName"];
     }

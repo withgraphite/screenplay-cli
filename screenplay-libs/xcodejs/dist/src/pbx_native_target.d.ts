@@ -12,6 +12,7 @@ export default class PBXNativeTarget extends PBXObject {
     name(): string;
     dependencies(): ReadonlyArray<PBXTargetDependency>;
     buildConfigurationList(): PBXBuildConfigList;
+    buildConfiguration(name: string): import("./pbx_build_config").default;
     defaultConfigurationName(): string;
     buildPhases(): ReadonlyArray<PBXBuildPhase>;
 }

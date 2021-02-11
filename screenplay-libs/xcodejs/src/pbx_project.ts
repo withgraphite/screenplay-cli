@@ -258,10 +258,10 @@ export default class PBXProj {
         // TODO: This will become a shoddy assumption soon, b/c if we're merging different
         // versions of the same project, it WILL have the same UUIDs; we should
         // prolly have some way to rename them and replace the UUIDs
-        throw (
+        throw Error(
           "Duplicate UUIDs detected ('" +
-          id +
-          "')! Are you trying to merge a file into itself?"
+            id +
+            "')! Are you trying to merge a file into itself?"
         );
       }
 
@@ -351,25 +351,6 @@ export default class PBXProj {
     this.patchBuildConfigValuesForTarget(target, filePathPrefix);
   }
 
-  public getApplicationBuildSetting(key: string) {
-    // Just grab the version of the first buildConfig (usually just debug and release)
-    return this.rootObject()
-      .applicationTargets()[0]
-      .buildConfigurationList()
-      .buildConfigs()[0]
-      .get("buildSettings")[key];
-  }
-
-  public setApplicationBuildSetting(key: string, value: string) {
-    const appTargetBuildConfigs = this.rootObject()
-      .applicationTargets()[0]
-      .buildConfigurationList()
-      .buildConfigs();
-    for (const buildConfig of appTargetBuildConfigs) {
-      this._defn["objects"][buildConfig._id]["buildSettings"][key] = value;
-    }
-  }
-
   public mergeTargets(
     other: PBXProj,
     newMainGroup: PBXGroup,
@@ -431,7 +412,9 @@ export default class PBXProj {
       const searchPaths = buildSettings["LD_RUNPATH_SEARCH_PATHS"];
       if (searchPaths instanceof Array) {
         if (!searchPaths.includes("@executable_path/Frameworks")) {
-          throw "Error! App runtime search paths don't include frameworks. This may indicate something is about to break.";
+          throw Error(
+            "Error! App runtime search paths don't include frameworks. This may indicate something is about to break."
+          );
         }
 
         buildSettings["LD_RUNPATH_SEARCH_PATHS"] = searchPaths.map(
@@ -449,7 +432,9 @@ export default class PBXProj {
         );
       } else if (typeof searchPaths === "string") {
         if (!searchPaths.includes("@executable_path/Frameworks")) {
-          throw "Error! App runtime search paths don't include frameworks. This may indicate something is about to break.";
+          throw Error(
+            "Error! App runtime search paths don't include frameworks. This may indicate something is about to break."
+          );
         }
 
         buildSettings["LD_RUNPATH_SEARCH_PATHS"] = searchPaths.replace(
@@ -459,7 +444,9 @@ export default class PBXProj {
             "/Frameworks"
         );
       } else {
-        throw "Error! App runtime search paths are some undefined type (or simply undefined). This is not expected!";
+        throw Error(
+          "Error! App runtime search paths are some undefined type (or simply undefined). This is not expected!"
+        );
       }
 
       if (defaultConfigurationName === buildConfig.name()) {
@@ -491,7 +478,7 @@ export default class PBXProj {
     }
 
     if (!defaultBuildConfigDetails) {
-      throw "Error! No default config found!";
+      throw Error("Error! No default config found!");
     }
 
     return {
@@ -578,11 +565,18 @@ export default class PBXProj {
     return name;
   }
 
-  public getTargetWithName(name: string): PBXNativeTarget | null {
+  public getTargetWithName(
+    name: string,
+    mustBeAppTarget?: boolean
+  ): PBXNativeTarget | null {
     const candidates = this.rootObject()
       .targets()
       .filter((target) => {
-        return target.name() === name;
+        return (
+          target.name() === name &&
+          (!mustBeAppTarget ||
+            target.productType() === "com.apple.product-type.application")
+        );
       });
 
     if (candidates.length > 1) {
@@ -739,10 +733,7 @@ export default class PBXProj {
         (isa === "XCBuildConfiguration" &&
           ["baseConfigurationReference"].includes(objectKey)) ||
         (isa === "PBXVariantGroup" && ["children"].includes(objectKey)) ||
-        (isa === "PBXShellScriptBuildPhase" &&
-          ["files", "outputFileListPaths", "inputFileListPaths"].includes(
-            objectKey
-          )) ||
+        (isa === "PBXShellScriptBuildPhase" && ["files"].includes(objectKey)) ||
         (isa === "PBXHeadersBuildPhase" && ["files"].includes(objectKey))
       ) {
         if (!potentialKey(objectValue, false)) {

@@ -30,13 +30,11 @@ export default class PBXProj {
     private copyOtherObjectsIntoSelf;
     private patchMergedAppTarget;
     private patchMergedTarget;
-    getApplicationBuildSetting(key: string): any;
-    setApplicationBuildSetting(key: string, value: string): void;
     mergeTargets(other: PBXProj, newMainGroup: PBXGroup, filePathPrefix: string): PBXNativeTarget[];
     convertAppToFramework(target: PBXNativeTarget, filePathPrefix: string, frameworkStepId: string): TMergedAppDetails;
     extractMarketingAppIcon(buildSettings: BuildSettings, target: PBXNativeTarget): string | null;
     extractAppName(buildSettings: BuildSettings): string | null;
-    getTargetWithName(name: string): PBXNativeTarget | null;
+    getTargetWithName(name: string, mustBeAppTarget?: boolean): PBXNativeTarget | null;
     addEntitlementsToBuildConfig(file: string, buildConfigId: string, baseConfigId: string | undefined, buildSettings: Record<string, any>): void;
     createGroup(name: string, path?: string): PBXGroup;
     containsNode(id: string): boolean;
