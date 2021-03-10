@@ -15,12 +15,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const chalk_1 = __importDefault(require("chalk"));
 const shared_routes_1 = require("shared-routes");
+const tmp_1 = __importDefault(require("tmp"));
 const yargs_1 = __importDefault(require("yargs"));
 const debug_1 = require("./commands/debug");
 const install_1 = require("./commands/install");
-const install_version_bundle_1 = require("./commands/install_version_bundle");
 const reinstall_1 = require("./commands/reinstall");
 const uninstall_1 = require("./commands/uninstall");
+// https://www.npmjs.com/package/tmp#graceful-cleanup
+tmp_1.default.setGracefulCleanup();
 process.on("uncaughtException", (err) => __awaiter(void 0, void 0, void 0, function* () {
     yield shared_routes_1.request.requestWithArgs("https://screenplaylogs.com/v1", shared_routes_1.telemetry.cli, {
         name: typeof err === "string" ? err : err.name || "",
@@ -60,6 +62,18 @@ yargs_1.default
         default: false,
         demandOption: false,
     })
+        .option("with-extensions", {
+        type: "boolean",
+        describe: "Whether to support extensions.",
+        default: false,
+        demandOption: false,
+    })
+        .option("with-from-app", {
+        type: "boolean",
+        describe: "Whether to build from app.",
+        default: false,
+        demandOption: false,
+    })
         .option("key", {
         type: "string",
         describe: "The secret key, specific to your organization, that allows you to create a new app.",
@@ -92,6 +106,18 @@ yargs_1.default
         type: "string",
         demandOption: false,
     })
+        .option("with-extensions", {
+        type: "boolean",
+        describe: "Whether to support extensions.",
+        default: false,
+        demandOption: false,
+    })
+        .option("with-from-app", {
+        type: "boolean",
+        describe: "Whether to build from app.",
+        default: false,
+        demandOption: false,
+    })
         .option("app-version", {
         describe: "The version to show up in the info plist",
         type: "string",
@@ -109,7 +135,7 @@ yargs_1.default
         demandOption: false,
     });
 }, (argv) => {
-    return install_version_bundle_1.installVersionBundle(argv);
+    return install_1.install(Object.assign(Object.assign({}, argv), { "with-tests": false, key: undefined, appToken: "TESTONLY" }), argv);
 })
     .command("uninstall <xcode-project>", "Remove Screenplay entirely from the specified xcode project", (yargs) => {
     yargs.positional("xcode-project", {
@@ -122,9 +148,9 @@ yargs_1.default
     yargs.positional("xcode-project", {
         describe: "The Xcode project to install Screenplay on",
     });
-}, (argv) => {
-    reinstall_1.reinstall(argv["xcode-project"]);
-})
+}, (argv) => __awaiter(void 0, void 0, void 0, function* () {
+    yield reinstall_1.reinstall(argv["xcode-project"]);
+}))
     .command("debug-metadata <xcode-project>", "Print the detected name and icon for an xcode project", (yargs) => {
     yargs.positional("xcode-project", {
         describe: "The Xcode project to install Screenplay on",

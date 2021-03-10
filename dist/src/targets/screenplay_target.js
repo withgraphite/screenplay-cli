@@ -15,6 +15,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addScreenplayAppTarget = void 0;
 const fs_extra_1 = __importDefault(require("fs-extra"));
+const os_1 = __importDefault(require("os"));
 const path_1 = __importDefault(require("path"));
 const shared_routes_1 = require("shared-routes");
 const xcodejs_1 = require("xcodejs");
@@ -23,16 +24,27 @@ const utils_1 = require("../lib/utils");
 const build_phase_1 = require("../phases/build_phase");
 const icon_phase_1 = require("../phases/icon_phase");
 const build_product_1 = require("../products/build_product");
-// TODO: This feels super rickety, basically relies on knowledge of framework name and that no variables or $(...) commands are included
-// Also note: I think this might be wrong - right now we pull frameworks from the bulid products dir, but we may want to first copy frameworks (codesign on copy) and THEN copy it so we have codesigning (but that assumes we won't update codesigning...)
 function generateBuildPhaseScript() {
-    const SCREENPLAY_BUILD_PHASE_DOWNLOADER = `${api_1.endpointWithArgs(shared_routes_1.api.scripts.buildPhaseDownloader, {}, { appSecret: "__REPLACE_ME__" }).replace("__REPLACE_ME__", "$SCREENPLAY_APP_KEY")}`;
+    const SCREENPLAY_BUILD_PHASE_DOWNLOADER = `${shared_routes_1.request
+        .endpointWithArgs(shared_routes_1.localhostApiServerWithPort(`\${NODE_PORT:-8000}`), shared_routes_1.api.scripts.buildPhaseDownloader, {}, { appSecret: "__REPLACE_ME__" })
+        .replace("__REPLACE_ME__", "$SCREENPLAY_APP_KEY")}`;
     return [
         `curl -o /dev/null -sfI "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}"`,
         `&& curl -s "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}"`,
         `| bash -s --`,
         `1>&2`,
         `|| (echo "error: Failed to download and execute Screenplay build script." && exit 1)`,
+    ].join(" ");
+}
+function generateVersionBundleScript(scheme, destination, workspace) {
+    return [
+        `${process.env.GITHUB_WORKSPACE
+            ? process.env.GITHUB_WORKSPACE
+            : path_1.default.join(os_1.default.homedir(), "monologue")}/build-phase/dist/build-phase.latest.pkg`,
+        `build-version-bundle`,
+        `--scheme "${scheme}"`,
+        `--destination ${destination}`,
+        workspace ? `--workspace "${workspace}"` : "",
     ].join(" ");
 }
 function addScreenplayAppTarget(opts) {
@@ -68,10 +80,11 @@ function addScreenplayAppTarget(opts) {
             }
         }
         const assetIconPhaseId = icon_phase_1.addScreenplayIconPhase(opts.xcodeProjectPath, opts.xcodeProject);
-        const buildPhaseId = build_phase_1.addScreenplayBuildPhase(opts.xcodeProject, generateBuildPhaseScript());
+        const buildPhaseId = build_phase_1.addScreenplayBuildPhase(opts.xcodeProject, opts.versionBundleDestination
+            ? generateVersionBundleScript(opts.appScheme, opts.versionBundleDestination, opts.workspacePath)
+            : generateBuildPhaseScript());
         const buildProductId = build_product_1.addScreenplayBuildProduct(opts.xcodeProject, opts.appTarget, `Screenplay-${opts.appTarget.product()._defn["path"]}`);
-        const duplicatedBuildConfigListId = opts.xcodeProject.deepDuplicate(opts.appTarget.buildConfigurationList()._id);
-        const duplicatedBuildConfigList = new xcodejs_1.PBXBuildConfigList(duplicatedBuildConfigListId, opts.xcodeProject);
+        const duplicatedBuildConfigList = opts.xcodeProject.duplicateBuildConfigList(opts.appTarget.buildConfigurationList(), opts.xcodeProject);
         duplicatedBuildConfigList.buildConfigs().forEach((buildConfig) => {
             // If we embed the swift std lib, then xcode tries to use source maps to find the file we built
             // the app from (my guess is to try and determine which features to include). B/c that source file
@@ -97,17 +110,40 @@ function addScreenplayAppTarget(opts) {
             buildConfig.buildSettings()["ASSETCATALOG_COMPILER_APPICON_NAME"] =
                 "AppIcon";
             buildConfig.buildSettings()["SCREENPLAY_APP_KEY"] = appSecret;
+            buildConfig.buildSettings()["SCREENPLAY_ORIGINAL_APP_PRODUCT"] = opts.appTarget.product()._defn["path"];
             buildConfig.buildSettings()["SCREENPLAY_SCHEME"] = opts.appScheme;
             if (opts.workspacePath) {
                 buildConfig.buildSettings()["SCREENPLAY_WORKSPACE"] = path_1.default.relative(path_1.default.dirname(opts.xcodeProjectPath), opts.workspacePath);
             }
+            // Configurations
+            if (opts.withExtensions) {
+                buildConfig.buildSettings()["SCREENPLAY_EXP_EXTENSIONS"] = "YES";
+            }
+            if (opts.withFromApp) {
+                buildConfig.buildSettings()["SCREENPLAY_EXP_FROM_APP"] = "YES";
+            }
         });
+        const containerItemProxy = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+        opts.xcodeProject._defn["objects"][containerItemProxy] = {
+            isa: "PBXContainerItemProxy",
+            containerPortal: opts.xcodeProject.rootObject()._id,
+            proxyType: "1",
+            remoteGlobalIDString: opts.appTarget._id,
+            remoteInfo: opts.appTarget.name(),
+        };
+        const appTargetDependency = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
+        opts.xcodeProject._defn["objects"][appTargetDependency] = {
+            isa: "PBXTargetDependency",
+            target: opts.appTarget._id,
+            targetProxy: containerItemProxy,
+        };
         const buildTargetId = xcodejs_1.Utils.generateUUID(opts.xcodeProject.allObjectKeys());
         opts.xcodeProject._defn["objects"][buildTargetId] = {
             isa: "PBXNativeTarget",
-            buildConfigurationList: duplicatedBuildConfigListId,
+            buildConfigurationList: duplicatedBuildConfigList._id,
             buildPhases: [assetIconPhaseId, buildPhaseId],
             buildRules: [],
+            dependencies: [appTargetDependency],
             name: `Screenplay-${opts.appTarget.name()}`,
             productName: `Screenplay-${opts.appTarget._defn["productName"]}`,
             productReference: buildProductId,

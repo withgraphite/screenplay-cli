@@ -27,6 +27,7 @@ const child_process_1 = require("child_process");
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path = __importStar(require("path"));
 const pbx_build_config_1 = __importDefault(require("./pbx_build_config"));
+const pbx_build_config_list_1 = __importDefault(require("./pbx_build_config_list"));
 const pbx_build_file_1 = __importDefault(require("./pbx_build_file"));
 const pbx_group_1 = __importDefault(require("./pbx_group"));
 const pbx_native_target_1 = __importDefault(require("./pbx_native_target"));
@@ -58,7 +59,7 @@ class PBXProj {
     // On-disk
     // *******
     static readFileSync(file) {
-        const data = child_process_1.execSync("plutil -convert json -o - " + file, {
+        const data = child_process_1.execSync(`plutil -convert json -o - "${file}"`, {
             maxBuffer: 1024 * 1024 * 1024,
         });
         const defn = JSON.parse(data.toString());
@@ -71,7 +72,7 @@ class PBXProj {
         // HOWEVER, on big projects, xcode craps out on JSON and doesn't convert /
         // greys out the save button. For that reason we export as XML
         // fs.writeFileSync(file, JSON.stringify(this._defn));
-        child_process_1.execSync(`plutil -convert ${format} - -o ` + file, {
+        child_process_1.execSync(`plutil -convert ${format} - -o "${file}"`, {
             input: JSON.stringify(this._defn),
         });
     }
@@ -377,7 +378,7 @@ class PBXProj {
         // Get larget icon
         const rawContents = fs_extra_1.default.readFileSync(path.join(potentialAppIcons[0], "Contents.json"));
         const contents = JSON.parse(rawContents.toString());
-        for (let imageMetadata of contents["images"]) {
+        for (const imageMetadata of contents["images"]) {
             if (imageMetadata["idiom"] === "ios-marketing" &&
                 imageMetadata["filename"]) {
                 return path.join(potentialAppIcons[0], imageMetadata["filename"]);
@@ -397,6 +398,31 @@ class PBXProj {
             name = buildSettings.expand(name);
         }
         return name;
+    }
+    duplicateBuildConfig(buildConfig, project) {
+        const newObjID = utils_1.generateUUID(project.allObjectKeys());
+        const newObj = {};
+        Object.keys(buildConfig._defn).forEach((key) => {
+            newObj[key] = utils_1.deepCopy(buildConfig._defn[key]);
+        });
+        project._defn["objects"][newObjID] = newObj;
+        return new pbx_build_config_1.default(newObjID, project);
+    }
+    duplicateBuildConfigList(buildConfigList, project) {
+        const newObjID = utils_1.generateUUID(project.allObjectKeys());
+        const newObj = {};
+        Object.keys(buildConfigList._defn).forEach((key) => {
+            if (key === "buildConfigurations") {
+                newObj[key] = buildConfigList._defn[key].map((buildConfigId) => {
+                    return this.duplicateBuildConfig(new pbx_build_config_1.default(buildConfigId, this), project)._id;
+                });
+            }
+            else {
+                newObj[key] = utils_1.deepCopy(buildConfigList._defn[key]);
+            }
+        });
+        project._defn["objects"][newObjID] = newObj;
+        return new pbx_build_config_list_1.default(newObjID, project);
     }
     getTargetWithName(name, mustBeAppTarget) {
         const candidates = this.rootObject()

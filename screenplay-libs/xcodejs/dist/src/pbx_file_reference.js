@@ -31,10 +31,10 @@ class PBXFileReference extends pbx_object_1.default {
         super(id, proj, data);
     }
     static createFromFrameworkPath(frameworkPath, proj) {
-        return new PBXFileReference(utils_1.generateUUID([]), proj, Object.assign(Object.assign({}, DEFAULTS), { name: path_1.default.basename(frameworkPath), path: frameworkPath }));
+        return new PBXFileReference(utils_1.generateUUID(proj.allObjectKeys()), proj, Object.assign(Object.assign({}, DEFAULTS), { name: path_1.default.basename(frameworkPath), path: frameworkPath }));
     }
     static createFromAbsolutePath(filePath, fileType, proj) {
-        return new PBXFileReference(utils_1.generateUUID([]), proj, Object.assign(Object.assign({}, DEFAULTS), { name: path_1.default.basename(filePath), path: filePath, lastKnownFileType: fileType, sourceTree: "<absolute>" }));
+        return new PBXFileReference(utils_1.generateUUID(proj.allObjectKeys()), proj, Object.assign(Object.assign({}, DEFAULTS), { name: path_1.default.basename(filePath), path: filePath, lastKnownFileType: fileType, sourceTree: "<absolute>" }));
     }
     path() {
         return this._defn["path"];

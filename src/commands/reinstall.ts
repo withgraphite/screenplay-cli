@@ -5,7 +5,7 @@ import { readProject } from "../lib/utils";
 import { install } from "./install";
 import { removeScreenplayManagedTargetsAndProducts } from "./uninstall";
 
-export function reinstall(xcodeProjectPath: string) {
+export async function reinstall(xcodeProjectPath: string) {
   const xcodeProject = readProject(xcodeProjectPath);
 
   // get details
@@ -19,8 +19,8 @@ export function reinstall(xcodeProjectPath: string) {
   xcodeProject.writeFileSync(path.join(xcodeProjectPath, "project.pbxproj"));
 
   // reinstall
-  installDetails.forEach((installDetail) => {
-    install(installDetail);
+  await installDetails.forEach(async (installDetail) => {
+    await install(installDetail);
   });
 }
 
@@ -55,6 +55,7 @@ export function extractScreenplayReinstallDetails(
         "with-tests": false,
         key: undefined,
         appToken: settings["SCREENPLAY_APP_KEY"],
+        "with-extensions": !!settings["SCREENPLAY_EXP_EXTENSIONS"],
       };
     });
 }

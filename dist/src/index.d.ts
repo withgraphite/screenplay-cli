@@ -6,6 +6,8 @@ export declare type AddTargetArgs = BaseArgs & {
     "app-target"?: string;
     "app-scheme"?: string;
     workspace?: string;
+    "with-extensions"?: boolean;
+    "with-from-app"?: boolean;
 };
 export declare type InstallArgs = AddTargetArgs & {
     "app-config-name"?: string;

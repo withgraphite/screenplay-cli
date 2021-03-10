@@ -20,7 +20,7 @@ const utils_1 = require("../lib/utils");
 const screenplay_target_1 = require("../targets/screenplay_target");
 const test_target_1 = require("../targets/test_target");
 const uninstall_1 = require("./uninstall");
-function install(argv) {
+function install(argv, versionBundleOnlyArgs) {
     return __awaiter(this, void 0, void 0, function* () {
         const xcodeProject = utils_1.readProject(argv["xcode-project"]);
         const xcodeFileName = path_1.default.basename(argv["xcode-project"]);
@@ -31,6 +31,16 @@ function install(argv) {
         // To get idempotency, we simply remove and re-install
         uninstall_1.removeScreenplayManagedTargetsAndProducts(xcodeProject);
         const appTarget = utils_1.extractTarget(xcodeProject, argv["app-target"]);
+        if (versionBundleOnlyArgs) {
+            // Make sure to set synthetic versions on the version bundle source target (not the new one)
+            appTarget
+                .buildConfigurationList()
+                .buildConfigs()
+                .forEach((buildConfig) => {
+                buildConfig.buildSettings()["MARKETING_VERSION"] =
+                    versionBundleOnlyArgs["app-version"];
+            });
+        }
         const schemeName = utils_1.determineScheme({
             appTargetName: appTarget.name(),
             porkspace: porkspace,
@@ -44,6 +54,9 @@ function install(argv) {
             appToken: argv["appToken"],
             appScheme: schemeName,
             workspacePath: argv["workspace"],
+            withExtensions: argv["with-extensions"],
+            withFromApp: argv["with-from-app"],
+            versionBundleDestination: versionBundleOnlyArgs && versionBundleOnlyArgs.destination,
         });
         const newSchemeName = xcodejs_1.XCSchemes.createSchema({
             srcSchemeName: schemeName,

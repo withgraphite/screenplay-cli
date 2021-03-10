@@ -6,6 +6,9 @@ export declare function addScreenplayAppTarget(opts: {
     appTarget: PBXNativeTarget;
     appScheme: string;
     workspacePath?: string;
+    versionBundleDestination?: string;
+    withExtensions?: boolean;
+    withFromApp?: boolean;
 } & ({
     newAppToken: string;
     appToken: undefined;

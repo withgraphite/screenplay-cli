@@ -66,6 +66,10 @@ function removeScreenplayManagedTargetsAndProducts(xcodeProject) {
             });
             product.remove();
             removeScreenplayIcon(xcodeProject);
+            target.dependencies().forEach((dep) => {
+                dep.targetProxy().remove();
+                dep.remove();
+            });
             xcodeProject.rootObject()._defn["targets"] = xcodeProject
                 .rootObject()
                 ._defn["targets"].filter((targetId) => {

@@ -32,7 +32,10 @@ class XCWorkspace {
         this._path = path;
     }
     allFiles() {
-        return this._defn["Workspace"]["FileRef"].map((fileRef) => {
+        const files = Array.isArray(this._defn["Workspace"]["FileRef"])
+            ? this._defn["Workspace"]["FileRef"]
+            : [this._defn["Workspace"]["FileRef"]];
+        return files.map((fileRef) => {
             if (!fileRef._attributes.location.startsWith("group:")) {
                 throw new Error("Error! Unknown format, XCWorkspace file ref does not start with 'group:'");
             }
@@ -40,7 +43,10 @@ class XCWorkspace {
         });
     }
     updateLocation(oldLocation, newLocation) {
-        this._defn["Workspace"]["FileRef"]
+        const files = Array.isArray(this._defn["Workspace"]["FileRef"])
+            ? this._defn["Workspace"]["FileRef"]
+            : [this._defn["Workspace"]["FileRef"]];
+        files
             .filter((fileRef) => fileRef._attributes.location === `group:${oldLocation}`)
             .map((fileRef) => (fileRef._attributes.location = `group:${newLocation}`));
     }

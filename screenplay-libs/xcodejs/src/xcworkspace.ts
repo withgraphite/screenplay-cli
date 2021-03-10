@@ -17,7 +17,10 @@ export class XCWorkspace {
   }
 
   public allFiles(): string[] {
-    return this._defn["Workspace"]["FileRef"].map((fileRef: FileRef) => {
+    const files = Array.isArray(this._defn["Workspace"]["FileRef"])
+      ? this._defn["Workspace"]["FileRef"]
+      : [this._defn["Workspace"]["FileRef"]];
+    return files.map((fileRef: FileRef) => {
       if (!fileRef._attributes.location.startsWith("group:")) {
         throw new Error(
           "Error! Unknown format, XCWorkspace file ref does not start with 'group:'"
@@ -29,7 +32,10 @@ export class XCWorkspace {
   }
 
   public updateLocation(oldLocation: string, newLocation: string) {
-    this._defn["Workspace"]["FileRef"]
+    const files = Array.isArray(this._defn["Workspace"]["FileRef"])
+      ? this._defn["Workspace"]["FileRef"]
+      : [this._defn["Workspace"]["FileRef"]];
+    files
       .filter(
         (fileRef: FileRef) =>
           fileRef._attributes.location === `group:${oldLocation}`

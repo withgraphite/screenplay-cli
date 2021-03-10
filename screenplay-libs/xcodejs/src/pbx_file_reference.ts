@@ -56,7 +56,7 @@ export default class PBXFileReference extends PBXObject {
     frameworkPath: string,
     proj: PBXProj
   ): PBXFileReference {
-    return new PBXFileReference(generateUUID([]), proj, {
+    return new PBXFileReference(generateUUID(proj.allObjectKeys()), proj, {
       ...DEFAULTS,
       name: path.basename(frameworkPath),
       path: frameworkPath,
@@ -68,7 +68,7 @@ export default class PBXFileReference extends PBXObject {
     fileType: string,
     proj: PBXProj
   ): PBXFileReference {
-    return new PBXFileReference(generateUUID([]), proj, {
+    return new PBXFileReference(generateUUID(proj.allObjectKeys()), proj, {
       ...DEFAULTS,
       name: path.basename(filePath),
       path: filePath,

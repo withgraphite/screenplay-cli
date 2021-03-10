@@ -32,7 +32,7 @@ export default class PBXNativeTarget extends PBXObject {
   }
 
   dependencies(): ReadonlyArray<PBXTargetDependency> {
-    return this._defn["dependencies"].map((dependencyId: string) => {
+    return (this._defn["dependencies"] || []).map((dependencyId: string) => {
       return new PBXTargetDependency(dependencyId, this._proj);
     });
   }

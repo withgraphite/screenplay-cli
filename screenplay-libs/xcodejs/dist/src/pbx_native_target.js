@@ -30,7 +30,7 @@ class PBXNativeTarget extends pbx_object_1.default {
         return this._defn["name"];
     }
     dependencies() {
-        return this._defn["dependencies"].map((dependencyId) => {
+        return (this._defn["dependencies"] || []).map((dependencyId) => {
             return new pbx_target_dependency_1.default(dependencyId, this._proj);
         });
     }

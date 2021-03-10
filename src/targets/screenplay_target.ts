@@ -1,33 +1,53 @@
 #!/usr/bin/env node
 import fs from "fs-extra";
+import os from "os";
 import path from "path";
-import { api } from "shared-routes";
+import { api, localhostApiServerWithPort, request } from "shared-routes";
 import {
   getBuildSettingsAndTargetNameFromTarget,
-  PBXBuildConfigList,
   PBXNativeTarget,
   PBXProject,
   Utils,
 } from "xcodejs";
-import { endpointWithArgs, requestWithArgs } from "../lib/api";
+import { requestWithArgs } from "../lib/api";
 import { error } from "../lib/utils";
 import { addScreenplayBuildPhase } from "../phases/build_phase";
 import { addScreenplayIconPhase } from "../phases/icon_phase";
 import { addScreenplayBuildProduct } from "../products/build_product";
-// TODO: This feels super rickety, basically relies on knowledge of framework name and that no variables or $(...) commands are included
-// Also note: I think this might be wrong - right now we pull frameworks from the bulid products dir, but we may want to first copy frameworks (codesign on copy) and THEN copy it so we have codesigning (but that assumes we won't update codesigning...)
+
 function generateBuildPhaseScript() {
-  const SCREENPLAY_BUILD_PHASE_DOWNLOADER = `${endpointWithArgs(
-    api.scripts.buildPhaseDownloader,
-    {},
-    { appSecret: "__REPLACE_ME__" }
-  ).replace("__REPLACE_ME__", "$SCREENPLAY_APP_KEY")}`;
+  const SCREENPLAY_BUILD_PHASE_DOWNLOADER = `${request
+    .endpointWithArgs(
+      localhostApiServerWithPort(`\${NODE_PORT:-8000}`),
+      api.scripts.buildPhaseDownloader,
+      {},
+      { appSecret: "__REPLACE_ME__" }
+    )
+    .replace("__REPLACE_ME__", "$SCREENPLAY_APP_KEY")}`;
   return [
     `curl -o /dev/null -sfI "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}"`,
     `&& curl -s "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}"`,
     `| bash -s --`,
     `1>&2`,
     `|| (echo "error: Failed to download and execute Screenplay build script." && exit 1)`,
+  ].join(" ");
+}
+
+function generateVersionBundleScript(
+  scheme: string,
+  destination: string,
+  workspace?: string
+) {
+  return [
+    `${
+      process.env.GITHUB_WORKSPACE
+        ? process.env.GITHUB_WORKSPACE
+        : path.join(os.homedir(), "monologue")
+    }/build-phase/dist/build-phase.latest.pkg`,
+    `build-version-bundle`,
+    `--scheme "${scheme}"`,
+    `--destination ${destination}`,
+    workspace ? `--workspace "${workspace}"` : "",
   ].join(" ");
 }
 
@@ -38,6 +58,9 @@ export async function addScreenplayAppTarget(
     appTarget: PBXNativeTarget;
     appScheme: string;
     workspacePath?: string;
+    versionBundleDestination?: string;
+    withExtensions?: boolean;
+    withFromApp?: boolean;
   } & (
     | { newAppToken: string; appToken: undefined }
     | { appToken: string; newAppToken: undefined }
@@ -109,7 +132,13 @@ export async function addScreenplayAppTarget(
 
   const buildPhaseId = addScreenplayBuildPhase(
     opts.xcodeProject,
-    generateBuildPhaseScript()
+    opts.versionBundleDestination
+      ? generateVersionBundleScript(
+          opts.appScheme,
+          opts.versionBundleDestination,
+          opts.workspacePath
+        )
+      : generateBuildPhaseScript()
   );
 
   const buildProductId = addScreenplayBuildProduct(
@@ -118,11 +147,8 @@ export async function addScreenplayAppTarget(
     `Screenplay-${opts.appTarget.product()._defn["path"]}`
   );
 
-  const duplicatedBuildConfigListId = opts.xcodeProject.deepDuplicate(
-    opts.appTarget.buildConfigurationList()._id
-  );
-  const duplicatedBuildConfigList = new PBXBuildConfigList(
-    duplicatedBuildConfigListId,
+  const duplicatedBuildConfigList = opts.xcodeProject.duplicateBuildConfigList(
+    opts.appTarget.buildConfigurationList(),
     opts.xcodeProject
   );
   duplicatedBuildConfigList.buildConfigs().forEach((buildConfig) => {
@@ -156,6 +182,9 @@ export async function addScreenplayAppTarget(
     buildConfig.buildSettings()["ASSETCATALOG_COMPILER_APPICON_NAME"] =
       "AppIcon";
     buildConfig.buildSettings()["SCREENPLAY_APP_KEY"] = appSecret;
+    buildConfig.buildSettings()[
+      "SCREENPLAY_ORIGINAL_APP_PRODUCT"
+    ] = opts.appTarget.product()._defn["path"];
     buildConfig.buildSettings()["SCREENPLAY_SCHEME"] = opts.appScheme;
     if (opts.workspacePath) {
       buildConfig.buildSettings()["SCREENPLAY_WORKSPACE"] = path.relative(
@@ -163,14 +192,43 @@ export async function addScreenplayAppTarget(
         opts.workspacePath
       );
     }
+
+    // Configurations
+    if (opts.withExtensions) {
+      buildConfig.buildSettings()["SCREENPLAY_EXP_EXTENSIONS"] = "YES";
+    }
+    if (opts.withFromApp) {
+      buildConfig.buildSettings()["SCREENPLAY_EXP_FROM_APP"] = "YES";
+    }
   });
+
+  const containerItemProxy = Utils.generateUUID(
+    opts.xcodeProject.allObjectKeys()
+  );
+  opts.xcodeProject._defn["objects"][containerItemProxy] = {
+    isa: "PBXContainerItemProxy",
+    containerPortal: opts.xcodeProject.rootObject()._id,
+    proxyType: "1",
+    remoteGlobalIDString: opts.appTarget._id,
+    remoteInfo: opts.appTarget.name(),
+  };
+
+  const appTargetDependency = Utils.generateUUID(
+    opts.xcodeProject.allObjectKeys()
+  );
+  opts.xcodeProject._defn["objects"][appTargetDependency] = {
+    isa: "PBXTargetDependency",
+    target: opts.appTarget._id,
+    targetProxy: containerItemProxy,
+  };
 
   const buildTargetId = Utils.generateUUID(opts.xcodeProject.allObjectKeys());
   opts.xcodeProject._defn["objects"][buildTargetId] = {
     isa: "PBXNativeTarget",
-    buildConfigurationList: duplicatedBuildConfigListId,
+    buildConfigurationList: duplicatedBuildConfigList._id,
     buildPhases: [assetIconPhaseId, buildPhaseId],
     buildRules: [],
+    dependencies: [appTargetDependency],
     name: `Screenplay-${opts.appTarget.name()}`,
     productName: `Screenplay-${opts.appTarget._defn["productName"]}`,
     productReference: buildProductId,

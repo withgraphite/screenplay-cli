@@ -1,10 +1,16 @@
 import BuildSettings from "./build_settings";
+declare type TPlist = string | TPlist[] | {
+    [key: string]: TPlist;
+};
 export declare class Plist {
     _defn: {
-        [key: string]: any;
+        [key: string]: TPlist;
     };
-    constructor(defn: {});
+    constructor(defn: {
+        [key: string]: TPlist;
+    });
     static fromFile(file: string): Plist;
+    static fromString(str: string): Plist;
     get(key: string): any;
     private static _renderWithValues;
     renderWithValues(values: BuildSettings): Plist;
@@ -12,3 +18,4 @@ export declare class Plist {
     static fromOthers(plists: Plist[], overrideList: string[]): Plist;
     writeFile(file: string): void;
 }
+export {};

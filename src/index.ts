@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 import chalk from "chalk";
 import { request, telemetry } from "shared-routes";
+import tmp from "tmp";
 import yargs from "yargs";
 import { debugMetadata } from "./commands/debug";
 import { install } from "./commands/install";
-import { installVersionBundle } from "./commands/install_version_bundle";
 import { reinstall } from "./commands/reinstall";
 import { uninstall } from "./commands/uninstall";
+
+// https://www.npmjs.com/package/tmp#graceful-cleanup
+tmp.setGracefulCleanup();
 
 process.on("uncaughtException", async (err) => {
   await request.requestWithArgs(
@@ -31,6 +34,8 @@ export type AddTargetArgs = BaseArgs & {
   "app-target"?: string;
   "app-scheme"?: string;
   workspace?: string;
+  "with-extensions"?: boolean;
+  "with-from-app"?: boolean;
 };
 
 export type InstallArgs = AddTargetArgs & {
@@ -80,6 +85,18 @@ yargs
           default: false,
           demandOption: false,
         })
+        .option("with-extensions", {
+          type: "boolean",
+          describe: "Whether to support extensions.",
+          default: false,
+          demandOption: false,
+        })
+        .option("with-from-app", {
+          type: "boolean",
+          describe: "Whether to build from app.",
+          default: false,
+          demandOption: false,
+        })
         .option("key", {
           type: "string",
           describe:
@@ -98,7 +115,7 @@ yargs
         });
     },
     (argv) => {
-      return install(argv as any);
+      return install((argv as unknown) as InstallArgs);
     }
   )
   .command(
@@ -121,6 +138,18 @@ yargs
           type: "string",
           demandOption: false,
         })
+        .option("with-extensions", {
+          type: "boolean",
+          describe: "Whether to support extensions.",
+          default: false,
+          demandOption: false,
+        })
+        .option("with-from-app", {
+          type: "boolean",
+          describe: "Whether to build from app.",
+          default: false,
+          demandOption: false,
+        })
         .option("app-version", {
           describe: "The version to show up in the info plist",
           type: "string",
@@ -139,7 +168,13 @@ yargs
         });
     },
     (argv) => {
-      return installVersionBundle(
+      return install(
+        {
+          ...((argv as unknown) as InstallVersionBundleArgs),
+          "with-tests": false,
+          key: undefined,
+          appToken: "TESTONLY",
+        },
         (argv as unknown) as InstallVersionBundleArgs
       );
     }
@@ -164,8 +199,8 @@ yargs
         describe: "The Xcode project to install Screenplay on",
       });
     },
-    (argv) => {
-      reinstall(argv["xcode-project"] as string);
+    async (argv) => {
+      await reinstall(argv["xcode-project"] as string);
     }
   )
   .command(

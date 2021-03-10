@@ -17,6 +17,11 @@ class Plist {
         const defn = JSON.parse(data.toString());
         return new Plist(defn);
     }
+    static fromString(str) {
+        const data = child_process_1.execSync(`plutil -convert json -o - -- -`, { input: str });
+        const defn = JSON.parse(data.toString());
+        return new Plist(defn);
+    }
     get(key) {
         return this._defn[key];
     }

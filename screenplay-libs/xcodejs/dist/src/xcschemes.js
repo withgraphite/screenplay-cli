@@ -57,9 +57,11 @@ function createSchema(opts) {
 }
 exports.createSchema = createSchema;
 function createAppScheme(buildableName, blueprintName, blueprintIdentifier, container) {
+    // NEED to build xcode implicit deps b/c that is an inherited property (i.e. if we set it to NO,
+    // but we depend on their app, then we will try to build their app without implicit deps)
     return `<?xml version="1.0" encoding="UTF-8"?>
   <Scheme LastUpgradeVersion="1160" version="1.3">
-    <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="NO">
+    <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES">
       <BuildActionEntries>
         <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
           <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="${blueprintIdentifier}" BuildableName="${buildableName}" BlueprintName="${blueprintName}" ReferencedContainer="container:${container}" />
@@ -96,8 +98,6 @@ function recursivelyMutateBuildRefs(options) {
                 attributes["BuildableName"] = options.buildableName;
                 attributes["BlueprintName"] = options.blueprintName;
                 attributes["ReferencedContainer"] = `container:${path_1.default.basename(options.projectPath)}`;
-            }
-            else if (attributes["BlueprintIdentifier"] != options.blueprintIdentifier) {
             }
         }
         const value = options.defn[key];

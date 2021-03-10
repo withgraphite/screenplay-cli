@@ -92,6 +92,11 @@ export function removeScreenplayManagedTargetsAndProducts(
 
         removeScreenplayIcon(xcodeProject);
 
+        target.dependencies().forEach((dep) => {
+          dep.targetProxy().remove();
+          dep.remove();
+        });
+
         xcodeProject.rootObject()._defn[
           "targets"
         ] = xcodeProject

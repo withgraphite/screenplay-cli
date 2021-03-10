@@ -3,7 +3,7 @@ export declare class XCConfig {
         [key: string]: any;
     };
     _path: string;
-    constructor(defn: {}, path: string);
+    constructor(defn: Record<string, unknown>, path: string);
     static fromFile(file: string): XCConfig;
     values(): {
         [key: string]: any;

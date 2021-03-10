@@ -7,14 +7,21 @@ type TPlist = string | TPlist[] | { [key: string]: TPlist };
 // Note: DO NOT ASSUME this is an info.plist (it could also be entitlements)
 // If you need to add info.plist specific methods here, please subclass this
 export class Plist {
-  _defn: { [key: string]: any };
+  _defn: { [key: string]: TPlist };
 
-  constructor(defn: {}) {
+  constructor(defn: { [key: string]: TPlist }) {
     this._defn = defn;
   }
 
   static fromFile(file: string): Plist {
     const data = execSync(`plutil -convert json -o - "${file}"`);
+    const defn = JSON.parse(data.toString());
+
+    return new Plist(defn);
+  }
+
+  static fromString(str: string): Plist {
+    const data = execSync(`plutil -convert json -o - -- -`, { input: str });
     const defn = JSON.parse(data.toString());
 
     return new Plist(defn);
@@ -48,7 +55,9 @@ export class Plist {
   }
 
   public renderWithValues(values: BuildSettings): Plist {
-    return new Plist(Plist._renderWithValues(this._defn, values));
+    return new Plist(
+      Plist._renderWithValues(this._defn, values) as { [key: string]: TPlist }
+    );
   }
 
   static mergeKeyFromOthers(

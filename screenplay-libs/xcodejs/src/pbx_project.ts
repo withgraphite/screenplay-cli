@@ -4,6 +4,7 @@ import fs from "fs-extra";
 import * as path from "path";
 import BuildSettings from "./build_settings";
 import PBXBuildConfig from "./pbx_build_config";
+import PBXBuildConfigList from "./pbx_build_config_list";
 import PBXBuildFile from "./pbx_build_file";
 import PBXGroup from "./pbx_group";
 import PBXNativeTarget from "./pbx_native_target";
@@ -26,7 +27,7 @@ export default class PBXProj {
   _defn: Record<string, any>;
   _srcRoot: string;
 
-  constructor(defn: {}, srcRoot: string) {
+  constructor(defn: Record<string, unknown>, srcRoot: string) {
     this._defn = defn;
     this._srcRoot = srcRoot;
   }
@@ -56,7 +57,7 @@ export default class PBXProj {
   // *******
 
   static readFileSync(file: string) {
-    const data = execSync("plutil -convert json -o - " + file, {
+    const data = execSync(`plutil -convert json -o - "${file}"`, {
       maxBuffer: 1024 * 1024 * 1024,
     });
     const defn = JSON.parse(data.toString());
@@ -64,7 +65,7 @@ export default class PBXProj {
     return new PBXProj(defn, path.dirname(path.dirname(file)));
   }
 
-  public writeFileSync(file: string, format: string = "xml1") {
+  public writeFileSync(file: string, format = "xml1") {
     // Strangely, xcode can accept ANY format of the pbxproj (including JSON!)
     // just when you resave the project, it will get rewritten as a traditional one
     //
@@ -73,7 +74,7 @@ export default class PBXProj {
 
     // fs.writeFileSync(file, JSON.stringify(this._defn));
 
-    execSync(`plutil -convert ${format} - -o ` + file, {
+    execSync(`plutil -convert ${format} - -o "${file}"`, {
       input: JSON.stringify(this._defn),
     });
   }
@@ -533,7 +534,7 @@ export default class PBXProj {
     );
     const contents = JSON.parse(rawContents.toString());
 
-    for (let imageMetadata of contents["images"]) {
+    for (const imageMetadata of contents["images"]) {
       if (
         imageMetadata["idiom"] === "ios-marketing" &&
         imageMetadata["filename"]
@@ -563,6 +564,47 @@ export default class PBXProj {
     }
 
     return name;
+  }
+
+  public duplicateBuildConfig(
+    buildConfig: PBXBuildConfig,
+    project: PBXProj
+  ): PBXBuildConfig {
+    const newObjID = generateUUID(project.allObjectKeys());
+    const newObj: Record<string, any> = {};
+
+    Object.keys(buildConfig._defn).forEach((key) => {
+      newObj[key] = deepCopy(buildConfig._defn[key]);
+    });
+
+    project._defn["objects"][newObjID] = newObj;
+    return new PBXBuildConfig(newObjID, project);
+  }
+
+  public duplicateBuildConfigList(
+    buildConfigList: PBXBuildConfigList,
+    project: PBXProj
+  ): PBXBuildConfigList {
+    const newObjID = generateUUID(project.allObjectKeys());
+    const newObj: Record<string, any> = {};
+
+    Object.keys(buildConfigList._defn).forEach((key) => {
+      if (key === "buildConfigurations") {
+        newObj[key] = buildConfigList._defn[key].map(
+          (buildConfigId: string) => {
+            return this.duplicateBuildConfig(
+              new PBXBuildConfig(buildConfigId, this),
+              project
+            )._id;
+          }
+        );
+      } else {
+        newObj[key] = deepCopy(buildConfigList._defn[key]);
+      }
+    });
+
+    project._defn["objects"][newObjID] = newObj;
+    return new PBXBuildConfigList(newObjID, project);
   }
 
   public getTargetWithName(

@@ -23,8 +23,6 @@ mocha_1.describe("reinstall", function () {
         });
         const reinstalledProject = xcodejs_1.PBXProject.readFileSync(xcodeprojProjectDir);
         chai_1.expect(JSON.stringify(reinstalledProject._defn, Object.keys(reinstalledProject._defn).sort(), 2).replace(/[A-Z0-9]{24}/g, "123")).to.deep.equal(JSON.stringify(installedProject._defn, Object.keys(installedProject._defn).sort(), 2).replace(/[A-Z0-9]{24}/g, "123"));
-        fs_extra_1.default.emptyDirSync(appDir.name);
-        appDir.removeCallback();
         done();
     }).timeout(20000);
     it("reinstalls correctly on lover", (done) => {

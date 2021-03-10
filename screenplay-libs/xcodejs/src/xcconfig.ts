@@ -8,7 +8,7 @@ export class XCConfig {
   _defn: { [key: string]: any };
   _path: string;
 
-  constructor(defn: {}, path: string) {
+  constructor(defn: Record<string, unknown>, path: string) {
     this._defn = defn;
     this._path = path;
   }

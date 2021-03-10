@@ -44,9 +44,6 @@ describe("reinstall", function () {
         2
       ).replace(/[A-Z0-9]{24}/g, "123")
     );
-
-    fs.emptyDirSync(appDir.name);
-    appDir.removeCallback();
     done();
   }).timeout(20000);
 

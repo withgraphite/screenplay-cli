@@ -1,5 +1,14 @@
 import * as t from "retype";
 declare const API_ROUTES: {
+    readonly featureFlags: {
+        readonly method: "GET";
+        readonly url: "/feature-flags";
+        readonly response: {
+            killswitch: t.BooleanType;
+            killswitchReason: t.StringType;
+            rotoscopeKillswitch: t.BooleanType;
+        };
+    };
     readonly health: {
         readonly method: "GET";
         readonly url: "/health";
@@ -34,6 +43,7 @@ declare const API_ROUTES: {
                 readonly archs: t.ArrayType<string>;
                 readonly isRelease: t.BooleanType;
                 readonly buildPhaseVersion: t.StringType;
+                readonly kind: t.PluralUnionType<t.LiteralType<"source" | "app">, "source" | "app">;
             };
             readonly response: {
                 readonly id: t.StringType;
@@ -50,7 +60,7 @@ declare const API_ROUTES: {
         };
         readonly downloadLatest: {
             readonly method: "GET";
-            readonly url: "/app-secret/:appSecret/version-bundles/";
+            readonly url: "/app-secret/:appSecret/version-bundles";
             readonly urlParams: {
                 readonly appSecret: t.StringType;
             };
@@ -59,7 +69,11 @@ declare const API_ROUTES: {
                 readonly maxSemver: t.StringType;
             };
             readonly response: {
-                readonly versionBundleUrls: t.ArrayType<string>;
+                readonly versionBundles: t.ArrayType<{
+                    id: string;
+                    url: string;
+                    kind: "source" | "app";
+                }>;
             };
         };
         readonly download: {
@@ -73,7 +87,9 @@ declare const API_ROUTES: {
                 readonly archs: t.StringType;
             };
             readonly response: {
+                readonly versionBundleId: t.StringType;
                 readonly versionBundleUrl: t.StringType;
+                readonly versionBundleKind: t.PluralUnionType<t.LiteralType<"source" | "app">, "source" | "app">;
             };
         };
     };
@@ -139,7 +155,7 @@ declare const API_ROUTES: {
             readonly params: {
                 readonly versions: t.ArrayType<{
                     embeddedId: number;
-                    semver: string;
+                    id: string;
                 }>;
             };
             readonly response: {
