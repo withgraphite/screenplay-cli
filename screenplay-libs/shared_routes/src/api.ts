@@ -604,9 +604,11 @@ const API_ROUTES = asRouteTree({
         persistId: t.string,
         os: t.string,
         device: t.string,
+        bootedVersion: t.optional(t.number),
       },
       response: {
         version: t.number,
+        backgroundTerminationEnabled: t.boolean,
       },
     },
   },

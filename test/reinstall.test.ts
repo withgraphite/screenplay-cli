@@ -46,45 +46,4 @@ describe("reinstall", function () {
     );
     done();
   }).timeout(20000);
-
-  it("reinstalls correctly on lover", (done) => {
-    const appDir = tmp.dirSync({ keep: false });
-    fs.copySync(path.join(__dirname, "resources/lover"), appDir.name);
-
-    const preReinstall = PBXProject.readFileSync(
-      path.join(appDir.name, "installed/lover-iphone.xcodeproj/project.pbxproj")
-    );
-
-    execSync(
-      `yarn --cwd .. cli reinstall "${path.join(
-        appDir.name,
-        "installed/lover-iphone.xcodeproj"
-      )}"`,
-      {
-        stdio: "inherit",
-      }
-    );
-
-    const postReinstall = PBXProject.readFileSync(
-      path.join(appDir.name, "installed/lover-iphone.xcodeproj/project.pbxproj")
-    );
-
-    expect(
-      JSON.stringify(
-        postReinstall._defn,
-        Object.keys(postReinstall._defn).sort(),
-        2
-      ).replace(/[A-Z0-9]{24}/g, "123")
-    ).to.deep.equal(
-      JSON.stringify(
-        preReinstall._defn,
-        Object.keys(preReinstall._defn).sort(),
-        2
-      ).replace(/[A-Z0-9]{24}/g, "123")
-    );
-
-    fs.emptyDirSync(appDir.name);
-    appDir.removeCallback();
-    done();
-  }).timeout(10000);
 });

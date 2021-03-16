@@ -27,18 +27,5 @@ mocha_1.describe("uninstall_clears_install", function () {
         appDir.removeCallback();
         done();
     }).timeout(10000);
-    it("uninstalls correctly on lover", (done) => {
-        const appDir = tmp_1.default.dirSync({ keep: false });
-        fs_extra_1.default.copySync(path_1.default.join(__dirname, "resources/lover"), appDir.name);
-        child_process_1.execSync(`yarn --cwd .. cli uninstall "${path_1.default.join(appDir.name, "installed/lover-iphone.xcodeproj")}"`, {
-            stdio: "inherit",
-        });
-        const preInstallProject = xcodejs_1.PBXProject.readFileSync(path_1.default.join(appDir.name, "original/lover-iphone.xcodeproj/project.pbxproj"));
-        const postInstallProject = xcodejs_1.PBXProject.readFileSync(path_1.default.join(appDir.name, "installed/lover-iphone.xcodeproj/project.pbxproj"));
-        chai_1.expect(postInstallProject._defn).to.deep.equal(preInstallProject._defn);
-        fs_extra_1.default.emptyDirSync(appDir.name);
-        appDir.removeCallback();
-        done();
-    }).timeout(10000);
 });
 //# sourceMappingURL=uninstall.test.js.map

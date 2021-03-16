@@ -552,9 +552,11 @@ declare const API_ROUTES: {
                 readonly persistId: t.StringType;
                 readonly os: t.StringType;
                 readonly device: t.StringType;
+                readonly bootedVersion: t.UnionType<number, undefined>;
             };
             readonly response: {
                 readonly version: t.NumberType;
+                readonly backgroundTerminationEnabled: t.BooleanType;
             };
         };
     };

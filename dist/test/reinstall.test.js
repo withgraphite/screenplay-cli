@@ -25,18 +25,5 @@ mocha_1.describe("reinstall", function () {
         chai_1.expect(JSON.stringify(reinstalledProject._defn, Object.keys(reinstalledProject._defn).sort(), 2).replace(/[A-Z0-9]{24}/g, "123")).to.deep.equal(JSON.stringify(installedProject._defn, Object.keys(installedProject._defn).sort(), 2).replace(/[A-Z0-9]{24}/g, "123"));
         done();
     }).timeout(20000);
-    it("reinstalls correctly on lover", (done) => {
-        const appDir = tmp_1.default.dirSync({ keep: false });
-        fs_extra_1.default.copySync(path_1.default.join(__dirname, "resources/lover"), appDir.name);
-        const preReinstall = xcodejs_1.PBXProject.readFileSync(path_1.default.join(appDir.name, "installed/lover-iphone.xcodeproj/project.pbxproj"));
-        child_process_1.execSync(`yarn --cwd .. cli reinstall "${path_1.default.join(appDir.name, "installed/lover-iphone.xcodeproj")}"`, {
-            stdio: "inherit",
-        });
-        const postReinstall = xcodejs_1.PBXProject.readFileSync(path_1.default.join(appDir.name, "installed/lover-iphone.xcodeproj/project.pbxproj"));
-        chai_1.expect(JSON.stringify(postReinstall._defn, Object.keys(postReinstall._defn).sort(), 2).replace(/[A-Z0-9]{24}/g, "123")).to.deep.equal(JSON.stringify(preReinstall._defn, Object.keys(preReinstall._defn).sort(), 2).replace(/[A-Z0-9]{24}/g, "123"));
-        fs_extra_1.default.emptyDirSync(appDir.name);
-        appDir.removeCallback();
-        done();
-    }).timeout(10000);
 });
 //# sourceMappingURL=reinstall.test.js.map
