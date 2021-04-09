@@ -23,7 +23,9 @@ const api_1 = require("../lib/api");
 const utils_1 = require("../lib/utils");
 const build_phase_1 = require("../phases/build_phase");
 function generateBuildPhaseScript() {
-    const SCREENPLAY_BUILD_PHASE_DOWNLOADER = `${shared_routes_1.request.endpointWithArgs(shared_routes_1.localhostApiServerWithPort(`\${NODE_PORT:-8000}`), shared_routes_1.api.scripts.buildPhaseDownloader, {}, {})}`;
+    const SCREENPLAY_BUILD_PHASE_DOWNLOADER = `${shared_routes_1.request.endpointWithArgs(process.env.NODE_ENV === "development"
+        ? shared_routes_1.localhostApiServerWithPort(`\${NODE_PORT:-8000}`)
+        : shared_routes_1.PROD_API_SERVER, shared_routes_1.api.scripts.buildPhaseDownloader, {}, {})}`;
     return `#!/bin/bash
 if curl -o /dev/null -H "X-SP-APP-SECRET: $SCREENPLAY_APP_KEY" -sfI "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}"; then
   curl -s -H "X-SP-APP-SECRET: $SCREENPLAY_APP_KEY" "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}" | bash -s -- 1>&2;

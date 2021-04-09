@@ -2,7 +2,12 @@
 import fs from "fs-extra";
 import os from "os";
 import path from "path";
-import { api, localhostApiServerWithPort, request } from "shared-routes";
+import {
+  api,
+  localhostApiServerWithPort,
+  PROD_API_SERVER,
+  request,
+} from "shared-routes";
 import {
   getBuildSettingsAndTargetNameFromTarget,
   PBXNativeTarget,
@@ -14,7 +19,9 @@ import { addScreenplayBuildPhase } from "../phases/build_phase";
 
 function generateBuildPhaseScript() {
   const SCREENPLAY_BUILD_PHASE_DOWNLOADER = `${request.endpointWithArgs(
-    localhostApiServerWithPort(`\${NODE_PORT:-8000}`),
+    process.env.NODE_ENV === "development"
+      ? localhostApiServerWithPort(`\${NODE_PORT:-8000}`)
+      : PROD_API_SERVER,
     api.scripts.buildPhaseDownloader,
     {},
     {}
