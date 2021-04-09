@@ -12,6 +12,7 @@ export declare class Plist {
     static fromFile(file: string): Plist;
     static fromString(str: string): Plist;
     get(key: string): any;
+    dig(...keys: string[]): any;
     private static _renderWithValues;
     renderWithValues(values: BuildSettings): Plist;
     static mergeKeyFromOthers(key: string, values: any[], overrideList: string[]): any;

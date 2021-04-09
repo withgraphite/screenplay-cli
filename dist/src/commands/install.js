@@ -15,21 +15,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.install = void 0;
 const chalk_1 = __importDefault(require("chalk"));
 const path_1 = __importDefault(require("path"));
-const xcodejs_1 = require("xcodejs");
 const utils_1 = require("../lib/utils");
 const screenplay_target_1 = require("../targets/screenplay_target");
 const test_target_1 = require("../targets/test_target");
-const uninstall_1 = require("./uninstall");
 function install(argv, versionBundleOnlyArgs) {
     return __awaiter(this, void 0, void 0, function* () {
         const xcodeProject = utils_1.readProject(argv["xcode-project"]);
         const xcodeFileName = path_1.default.basename(argv["xcode-project"]);
-        const porkspace = {
-            project: argv["xcode-project"],
-            workspace: argv["workspace"],
-        };
-        // To get idempotency, we simply remove and re-install
-        uninstall_1.removeScreenplayManagedTargetsAndProducts(xcodeProject);
         const appTarget = utils_1.extractTarget(xcodeProject, argv["app-target"]);
         if (versionBundleOnlyArgs) {
             // Make sure to set synthetic versions on the version bundle source target (not the new one)
@@ -41,30 +33,17 @@ function install(argv, versionBundleOnlyArgs) {
                     versionBundleOnlyArgs["app-version"];
             });
         }
-        const schemeName = utils_1.determineScheme({
-            appTargetName: appTarget.name(),
-            porkspace: porkspace,
-            schemeName: argv["app-scheme"],
-        });
-        const [screenplayAppId, buildTarget] = yield screenplay_target_1.addScreenplayAppTarget({
+        const screenplayAppId = yield screenplay_target_1.addScreenplayAppTarget({
             xcodeProjectPath: argv["xcode-project"],
             xcodeProject: xcodeProject,
             appTarget: appTarget,
             newAppToken: argv["key"],
             appToken: argv["appToken"],
-            appScheme: schemeName,
             workspacePath: argv["workspace"],
             withExtensions: argv["with-extensions"],
             withFromApp: argv["with-from-app"],
+            alwaysEnable: argv["always-enable"],
             versionBundleDestination: versionBundleOnlyArgs && versionBundleOnlyArgs.destination,
-        });
-        const newSchemeName = xcodejs_1.XCSchemes.createSchema({
-            srcSchemeName: schemeName,
-            workspacePath: argv["workspace"],
-            projectPath: argv["xcode-project"],
-            srcAppTarget: appTarget,
-            newBuildTarget: buildTarget,
-            buildableNameExtension: "app",
         });
         if (argv["with-tests"]) {
             test_target_1.addTests({
@@ -72,8 +51,7 @@ function install(argv, versionBundleOnlyArgs) {
                 projectPath: argv["xcode-project"],
                 workspacePath: argv["workspace"],
                 xcodeProject,
-                appTarget: buildTarget,
-                appScheme: newSchemeName,
+                appTarget,
             });
         }
         xcodeProject.writeFileSync(path_1.default.join(argv["xcode-project"], "project.pbxproj"));

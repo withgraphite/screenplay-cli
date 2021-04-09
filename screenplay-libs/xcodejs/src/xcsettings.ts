@@ -8,7 +8,7 @@ export class XCSettings {
   }
 
   static fromFile(file: string) {
-    const data = execSync("plutil -convert json -o - " + file, {
+    const data = execSync(`plutil -convert json -o - "${file}"`, {
       maxBuffer: 1024 * 1024 * 1024,
     });
     const defn = JSON.parse(data.toString());

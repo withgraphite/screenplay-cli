@@ -11,6 +11,7 @@ const path_1 = __importDefault(require("path"));
 const tmp_1 = __importDefault(require("tmp"));
 const xcodejs_1 = require("xcodejs");
 mocha_1.describe("uninstall_clears_install", function () {
+    this.timeout(30000);
     it("uninstalls correctly on blank app", (done) => {
         const appDir = tmp_1.default.dirSync({ keep: false });
         fs_extra_1.default.copySync(path_1.default.join(__dirname, "resources/blank-objc-storyboard"), appDir.name);
@@ -26,6 +27,6 @@ mocha_1.describe("uninstall_clears_install", function () {
         fs_extra_1.default.emptyDirSync(appDir.name);
         appDir.removeCallback();
         done();
-    }).timeout(10000);
+    }).timeout(20000);
 });
 //# sourceMappingURL=uninstall.test.js.map

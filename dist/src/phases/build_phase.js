@@ -12,8 +12,9 @@ function addScreenplayBuildPhase(xcodeProject, shellScript) {
         runOnlyForDeploymentPostprocessing: "0",
         shellPath: "/bin/sh",
         shellScript: shellScript,
+        inputPaths: ["$(CODESIGNING_FOLDER_PATH)/Info.plist"],
     };
-    return buildPhaseId;
+    return new xcodejs_1.PBXBuildPhase(buildPhaseId, xcodeProject);
 }
 exports.addScreenplayBuildPhase = addScreenplayBuildPhase;
 //# sourceMappingURL=build_phase.js.map

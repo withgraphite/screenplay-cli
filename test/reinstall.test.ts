@@ -26,9 +26,12 @@ describe("reinstall", function () {
 
     const installedProject = PBXProject.readFileSync(xcodeprojProjectDir);
 
-    execSync(`yarn --cwd .. cli reinstall "${xcodeprojDir}"`, {
-      stdio: "inherit",
-    });
+    execSync(
+      `yarn --cwd .. cli reinstall "${xcodeprojDir}" --app-target blank-objc-storyboard`,
+      {
+        stdio: "inherit",
+      }
+    );
     const reinstalledProject = PBXProject.readFileSync(xcodeprojProjectDir);
 
     expect(
@@ -45,5 +48,5 @@ describe("reinstall", function () {
       ).replace(/[A-Z0-9]{24}/g, "123")
     );
     done();
-  }).timeout(20000);
+  }).timeout(60000);
 });

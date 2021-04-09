@@ -8,11 +8,22 @@ import { asRouteTree } from "./base";
  */
 
 const API_ROUTES = asRouteTree({
-  intercut: {
+  oldIntercut: {
     method: "POST",
     url: "/intercut/:releaseSecret/telemetry",
     urlParams: {
       releaseSecret: t.string,
+    },
+    params: {
+      kind: t.literal("ERROR" as const),
+      errorKind: t.string,
+    },
+  },
+  intercut: {
+    method: "POST",
+    url: "/intercut/telemetry",
+    headers: {
+      "X-SP-APP-SECRET": t.string,
     },
     params: {
       kind: t.literal("ERROR" as const),

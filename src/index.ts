@@ -32,15 +32,17 @@ export type BaseArgs = {
 
 export type AddTargetArgs = BaseArgs & {
   "app-target"?: string;
-  "app-scheme"?: string;
-  workspace?: string;
   "with-extensions"?: boolean;
   "with-from-app"?: boolean;
+  // Note: We don't actually need workspace anymore (with roto), but we're keeping
+  // it in case we ever have to feature flag roto off. Once we have confidence we'll
+  // drop it.
+  workspace?: string;
 };
 
 export type InstallArgs = AddTargetArgs & {
-  "app-config-name"?: string;
   "with-tests": boolean;
+  "always-enable": boolean;
 } & (
     | { key: string; appToken: undefined }
     | { key: undefined; appToken: string }
@@ -67,11 +69,6 @@ yargs
           type: "string",
           demandOption: false,
         })
-        .option("app-scheme", {
-          describe: "The name of the scheme which builds your app",
-          type: "string",
-          demandOption: false,
-        })
         .option("workspace", {
           describe: "The workspace you use to build the app",
           type: "string",
@@ -88,6 +85,13 @@ yargs
         .option("with-extensions", {
           type: "boolean",
           describe: "Whether to support extensions.",
+          default: false,
+          demandOption: false,
+        })
+        .option("always-enable", {
+          type: "boolean",
+          describe:
+            "Whether to ALWAYS Screenplay builds (regardless of the configuration).",
           default: false,
           demandOption: false,
         })
@@ -155,11 +159,6 @@ yargs
           type: "string",
           demandOption: true,
         })
-        .option("app-scheme", {
-          describe: "The name of the scheme which builds your app",
-          type: "string",
-          demandOption: false,
-        })
         .option("workspace", {
           describe: "The workspace you use to build the app",
           type: "string",
@@ -174,6 +173,7 @@ yargs
           "with-tests": false,
           key: undefined,
           appToken: "TESTONLY",
+          "always-enable": true,
         },
         (argv as unknown) as InstallVersionBundleArgs
       );
@@ -183,24 +183,42 @@ yargs
     "uninstall <xcode-project>",
     "Remove Screenplay entirely from the specified xcode project",
     (yargs) => {
-      yargs.positional("xcode-project", {
-        describe: "The Xcode project to install Screenplay on",
-      });
+      yargs
+        .positional("xcode-project", {
+          describe: "The Xcode project to install Screenplay on",
+        })
+        .option("app-target", {
+          describe: "The name of the target which builds your app",
+          type: "string",
+          demandOption: false,
+        });
     },
     (argv) => {
-      uninstall(argv["xcode-project"] as string);
+      uninstall(
+        argv["xcode-project"] as string,
+        argv["app-target"] as string | undefined
+      );
     }
   )
   .command(
     "reinstall <xcode-project>",
     "Reinstall Screenplay on the specified xcode project",
     (yargs) => {
-      yargs.positional("xcode-project", {
-        describe: "The Xcode project to install Screenplay on",
-      });
+      yargs
+        .positional("xcode-project", {
+          describe: "The Xcode project to install Screenplay on",
+        })
+        .option("app-target", {
+          describe: "The name of the target which builds your app",
+          type: "string",
+          demandOption: false,
+        });
     },
     async (argv) => {
-      await reinstall(argv["xcode-project"] as string);
+      await reinstall(
+        argv["xcode-project"] as string,
+        argv["app-target"] as string | undefined
+      );
     }
   )
   .command(

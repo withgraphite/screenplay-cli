@@ -10,6 +10,9 @@ export declare type TRoute = {
     queryParams?: {
         [key: string]: t.Schema<string | undefined>;
     };
+    headers?: {
+        [key: string]: t.Schema<string | undefined>;
+    };
 } & (({
     method: "POST" | "PATCH" | "DELETE" | "PUT";
 } & ({

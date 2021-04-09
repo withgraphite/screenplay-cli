@@ -68,7 +68,8 @@ export function requestWithArgs<TActualRoute extends TRoute>(
     ? Buffer
     : t.UnwrapSchemaMap<TActualRoute["params"]>,
   queryParams?: t.UnwrapSchemaMap<TActualRoute["queryParams"]>,
-  urlParams?: t.UnwrapSchemaMap<TActualRoute["urlParams"]>
+  urlParams?: t.UnwrapSchemaMap<TActualRoute["urlParams"]>,
+  headers?: t.UnwrapSchemaMap<TActualRoute["headers"]>
 ): Promise<
   t.UnwrapSchemaMap<TActualRoute["response"]> & { _response: Response }
 > {
@@ -94,8 +95,9 @@ export function requestWithArgs<TActualRoute extends TRoute>(
     url,
     route.method,
     {
+      ...headers,
       "Content-Type": "text/plain",
-    },
+    } as Record<string, string>,
     body
   ).then((response) => {
     // if there is supposed to be a response type, parse it

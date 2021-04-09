@@ -26,6 +26,7 @@ const chalk_1 = __importDefault(require("chalk"));
 const child_process_1 = require("child_process");
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path = __importStar(require("path"));
+const tmp_1 = __importDefault(require("tmp"));
 const pbx_build_config_1 = __importDefault(require("./pbx_build_config"));
 const pbx_build_config_list_1 = __importDefault(require("./pbx_build_config_list"));
 const pbx_build_file_1 = __importDefault(require("./pbx_build_file"));
@@ -66,15 +67,21 @@ class PBXProj {
         return new PBXProj(defn, path.dirname(path.dirname(file)));
     }
     writeFileSync(file, format = "xml1") {
+        /**
+         * Note: Our plutil shim on linux can't take input from stdin.
+         */
+        const tempFile = tmp_1.default.fileSync();
+        fs_extra_1.default.writeFileSync(tempFile.name, JSON.stringify(this._defn));
         // Strangely, xcode can accept ANY format of the pbxproj (including JSON!)
         // just when you resave the project, it will get rewritten as a traditional one
         //
         // HOWEVER, on big projects, xcode craps out on JSON and doesn't convert /
         // greys out the save button. For that reason we export as XML
         // fs.writeFileSync(file, JSON.stringify(this._defn));
-        child_process_1.execSync(`plutil -convert ${format} - -o "${file}"`, {
-            input: JSON.stringify(this._defn),
+        child_process_1.execSync(`plutil -convert ${format} "${tempFile.name}" -o "${file}"`, {
+            stdio: "inherit",
         });
+        tempFile.removeCallback();
     }
     // *******
     // Updates

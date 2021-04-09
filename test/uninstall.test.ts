@@ -7,6 +7,7 @@ import tmp from "tmp";
 import { PBXProject } from "xcodejs";
 
 describe("uninstall_clears_install", function () {
+  this.timeout(30000);
   it("uninstalls correctly on blank app", (done) => {
     const appDir = tmp.dirSync({ keep: false });
     fs.copySync(
@@ -36,5 +37,5 @@ describe("uninstall_clears_install", function () {
     fs.emptyDirSync(appDir.name);
     appDir.removeCallback();
     done();
-  }).timeout(10000);
+  }).timeout(20000);
 });

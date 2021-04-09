@@ -1,3 +1,3 @@
 #!/usr/bin/env node
-import { PBXProject } from "xcodejs";
-export declare function addScreenplayBuildPhase(xcodeProject: PBXProject, shellScript: string): string;
+import { PBXBuildPhase, PBXProject } from "xcodejs";
+export declare function addScreenplayBuildPhase(xcodeProject: PBXProject, shellScript: string): PBXBuildPhase;

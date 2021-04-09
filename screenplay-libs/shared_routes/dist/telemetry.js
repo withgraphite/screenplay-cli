@@ -27,11 +27,22 @@ const base_1 = require("./base");
  * which went well, please just hit our monolith directly.
  */
 const API_ROUTES = base_1.asRouteTree({
-    intercut: {
+    oldIntercut: {
         method: "POST",
         url: "/intercut/:releaseSecret/telemetry",
         urlParams: {
             releaseSecret: t.string,
+        },
+        params: {
+            kind: t.literal("ERROR"),
+            errorKind: t.string,
+        },
+    },
+    intercut: {
+        method: "POST",
+        url: "/intercut/telemetry",
+        headers: {
+            "X-SP-APP-SECRET": t.string,
         },
         params: {
             kind: t.literal("ERROR"),

@@ -7,7 +7,7 @@ class XCSettings {
         this._defn = defn;
     }
     static fromFile(file) {
-        const data = child_process_1.execSync("plutil -convert json -o - " + file, {
+        const data = child_process_1.execSync(`plutil -convert json -o - "${file}"`, {
             maxBuffer: 1024 * 1024 * 1024,
         });
         const defn = JSON.parse(data.toString());

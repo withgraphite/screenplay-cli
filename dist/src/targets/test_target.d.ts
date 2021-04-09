@@ -6,5 +6,4 @@ export declare function addTests(opts: {
     workspacePath?: string;
     xcodeProject: PBXProject;
     appTarget: PBXNativeTarget;
-    appScheme: string;
 }): void;

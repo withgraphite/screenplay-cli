@@ -1,10 +1,11 @@
 import path from "path";
-import { PBXProject } from "xcodejs";
-import { readProject } from "../lib/utils";
+import { PBXNativeTarget, PBXProject } from "xcodejs";
+import { extractTarget, readProject } from "../lib/utils";
 
-export function uninstall(xcodeProjectPath: string) {
+export function uninstall(xcodeProjectPath: string, appTargetName?: string) {
   const xcodeProject = readProject(xcodeProjectPath);
-  removeScreenplayManagedTargetsAndProducts(xcodeProject);
+  const appTarget = extractTarget(xcodeProject, appTargetName);
+  removeScreenplayManagedTargetsAndProducts(xcodeProject, appTarget);
   xcodeProject.writeFileSync(path.join(xcodeProjectPath, "project.pbxproj"));
 
   console.log(`Screenplay has been uninstalled.`);
@@ -53,15 +54,18 @@ function removeScreenplayIcon(xcodeProject: PBXProject) {
 }
 
 export function removeScreenplayManagedTargetsAndProducts(
-  xcodeProject: PBXProject
+  xcodeProject: PBXProject,
+  appTarget: PBXNativeTarget
 ) {
+  // uninstall v1
+  removeScreenplayIcon(xcodeProject);
   xcodeProject
     .rootObject()
     .targets()
     .forEach((target) => {
       // TODO: At some point we should update this heuristic
       // (Maybe check a custom build setting or something)
-      if (target.name().startsWith("Screenplay-")) {
+      if (target.name() === "Screenplay-" + appTarget.name()) {
         target
           .buildConfigurationList()
           .buildConfigs()
@@ -90,8 +94,6 @@ export function removeScreenplayManagedTargetsAndProducts(
 
         product.remove();
 
-        removeScreenplayIcon(xcodeProject);
-
         target.dependencies().forEach((dep) => {
           dep.targetProxy().remove();
           dep.remove();
@@ -107,4 +109,25 @@ export function removeScreenplayManagedTargetsAndProducts(
         target.remove();
       }
     });
+
+  // uninstall v2
+  if (
+    appTarget
+      .buildConfigurationList()
+      .buildConfigs()
+      .some((bc) => !!bc.buildSettings()["SCREENPLAY_VERSION"])
+  ) {
+    appTarget
+      .buildConfigurationList()
+      .buildConfigs()
+      .forEach((buildConfig) => {
+        delete buildConfig.buildSettings()["SCREENPLAY_VERSION"];
+        delete buildConfig.buildSettings()["SCREENPLAY_APP_KEY"];
+        delete buildConfig.buildSettings()["SCREENPLAY_ENABLED"];
+      });
+    const buildPhases = appTarget._defn["buildPhases"];
+    const lastBuildPhaseId = buildPhases.pop(); // pop returns and mutates
+    delete xcodeProject._defn["objects"][lastBuildPhaseId];
+    appTarget._defn["buildPhases"] = buildPhases;
+  }
 }

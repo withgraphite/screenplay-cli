@@ -17,48 +17,51 @@ const path_1 = __importDefault(require("path"));
 const utils_1 = require("../lib/utils");
 const install_1 = require("./install");
 const uninstall_1 = require("./uninstall");
-function reinstall(xcodeProjectPath) {
+function reinstall(xcodeProjectPath, appTargetName) {
     return __awaiter(this, void 0, void 0, function* () {
         const xcodeProject = utils_1.readProject(xcodeProjectPath);
+        const appTarget = utils_1.extractTarget(xcodeProject, appTargetName);
         // get details
-        const installDetails = extractScreenplayReinstallDetails(xcodeProjectPath, xcodeProject);
+        const installDetails = extractScreenplayReinstallDetails(xcodeProjectPath, xcodeProject, appTarget);
         // uninstall
-        uninstall_1.removeScreenplayManagedTargetsAndProducts(xcodeProject);
+        uninstall_1.removeScreenplayManagedTargetsAndProducts(xcodeProject, appTarget);
         xcodeProject.writeFileSync(path_1.default.join(xcodeProjectPath, "project.pbxproj"));
         // reinstall
-        yield installDetails.forEach((installDetail) => __awaiter(this, void 0, void 0, function* () {
-            yield install_1.install(installDetail);
-        }));
+        yield install_1.install(installDetails);
     });
 }
 exports.reinstall = reinstall;
-function extractScreenplayReinstallDetails(xcodeProjectPath, xcodeProject) {
-    return xcodeProject
-        .rootObject()
-        .targets()
-        .filter((target) => {
-        // TODO: At some point we should update this heuristic
-        // (Maybe check a custom build setting or something)
-        return target.name().startsWith("Screenplay-");
-    })
-        .map((target) => {
-        const settings = target
+function extractScreenplayReinstallDetails(xcodeProjectPath, xcodeProject, target) {
+    let settings = target
+        .buildConfigurationList()
+        .buildConfigs()[0]
+        .buildSettings();
+    // Check if we're in V1
+    if (!settings["SCREENPLAY_APP_KEY"]) {
+        const screenplayTarget = xcodeProject.appTargets().find((t) => {
+            return t.name() === "Screenplay-" + target.name();
+        });
+        if (!screenplayTarget) {
+            throw Error("Could not identify Screenplay target");
+        }
+        settings = screenplayTarget
             .buildConfigurationList()
             .buildConfigs()[0]
             .buildSettings();
-        return {
-            "xcode-project": xcodeProjectPath,
-            "app-target": target.name().slice("Screenplay-".length),
-            "app-scheme": settings["SCREENPLAY_SCHEME"],
-            workspace: settings["SCREENPLAY_WORKSPACE"]
-                ? path_1.default.join(path_1.default.dirname(xcodeProjectPath), settings["SCREENPLAY_WORKSPACE"])
-                : settings["SCREENPLAY_WORKSPACE"],
-            "with-tests": false,
-            key: undefined,
-            appToken: settings["SCREENPLAY_APP_KEY"],
-            "with-extensions": !!settings["SCREENPLAY_EXP_EXTENSIONS"],
-        };
-    });
+    }
+    return {
+        "xcode-project": xcodeProjectPath,
+        "app-target": target.name(),
+        "with-tests": false,
+        key: undefined,
+        appToken: settings["SCREENPLAY_APP_KEY"],
+        "with-extensions": !!settings["SCREENPLAY_EXP_EXTENSIONS"],
+        "with-from-app": !!settings["SCREENPLAY_EXP_FROM_APP"],
+        "always-enable": false,
+        workspace: settings["SCREENPLAY_WORKSPACE"]
+            ? path_1.default.join(path_1.default.dirname(xcodeProjectPath), settings["SCREENPLAY_WORKSPACE"])
+            : settings["SCREENPLAY_WORKSPACE"],
+    };
 }
 exports.extractScreenplayReinstallDetails = extractScreenplayReinstallDetails;
 //# sourceMappingURL=reinstall.js.map

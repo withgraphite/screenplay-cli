@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addTests = exports.createSchema = exports.findSrcSchemePath = exports.list = void 0;
+exports.addTests = exports.removeAllTests = exports.createSchema = exports.findSrcSchemePath = exports.list = void 0;
 const child_process_1 = require("child_process");
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
@@ -125,6 +125,28 @@ function recursivelyMutateBuildRefs(options) {
         }
     });
 }
+function removeAllTests(opts) {
+    const appSchemePath = findSrcSchemePath({
+        projectPath: opts.projectPath,
+        schemeName: opts.appScheme,
+        workspacePath: opts.workspacePath,
+    });
+    if (!appSchemePath) {
+        throw Error(`Failed to find scheme ${opts.appScheme}`);
+    }
+    const data = fs_extra_1.default.readFileSync(appSchemePath);
+    const defn = xml_js_1.default.xml2js(data.toString(), { compact: true });
+    // If there is only one value (i.e. it's not an array), we can assume we
+    // need to build that one
+    if (Array.isArray(defn["Scheme"]["BuildAction"]["BuildActionEntries"]["BuildActionEntry"])) {
+        defn["Scheme"]["BuildAction"]["BuildActionEntries"]["BuildActionEntry"] = defn["Scheme"]["BuildAction"]["BuildActionEntries"]["BuildActionEntry"].filter((entry) => {
+            return !entry["BuildableReference"]["_attributes"]["BuildableName"].endsWith("xctest");
+        });
+    }
+    defn["Scheme"]["TestAction"]["Testables"]["TestableReference"] = [];
+    fs_extra_1.default.writeFileSync(appSchemePath, xml_js_1.default.js2xml(defn, { compact: true }));
+}
+exports.removeAllTests = removeAllTests;
 function addTests(opts) {
     const appSchemePath = findSrcSchemePath({
         projectPath: opts.projectPath,

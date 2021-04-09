@@ -1,5 +1,7 @@
 import chalk from "chalk";
 import { execSync } from "child_process";
+import fs from "fs-extra";
+import tmp from "tmp";
 import BuildSettings from "./build_settings";
 
 type TPlist = string | TPlist[] | { [key: string]: TPlist };
@@ -29,6 +31,18 @@ export class Plist {
 
   public get(key: string): any {
     return this._defn[key];
+  }
+
+  public dig(...keys: string[]): any {
+    let cur: any = this._defn;
+    for (const key in keys) {
+      if (cur[key]) {
+        cur = cur[key];
+      } else {
+        return undefined;
+      }
+    }
+    return cur;
   }
 
   // This is ignoring plist modifiers for now...
@@ -72,12 +86,17 @@ export class Plist {
     }
     // No specific handler found, assuming they must all be identical
     const firstValue = values[0];
-    const firstValueJSON = JSON.stringify(firstValue);
+    const firstValueJSON = JSON.stringify(
+      firstValue,
+      Object.keys(firstValue).sort()
+    );
     if (
       !values.every((value) => {
         // This isn't entirely correct, JSON doesn't guarantee ordering of dictionary keys, but
         // works for now
-        return JSON.stringify(value) === firstValueJSON;
+        return (
+          JSON.stringify(value, Object.keys(value).sort()) === firstValueJSON
+        );
       })
     ) {
       const errorMessage =
@@ -123,8 +142,12 @@ export class Plist {
   }
 
   public writeFile(file: string) {
-    execSync(`plutil -convert xml1 - -o "${file}"`, {
-      input: JSON.stringify(this._defn),
-    });
+    /**
+     * Note: Our plutil shim on linux can't take input from stdin.
+     */
+    const tempFile = tmp.fileSync();
+    fs.writeFileSync(tempFile.name, JSON.stringify(this._defn));
+    execSync(`plutil -convert xml1 "${tempFile.name}" -o "${file}"`);
+    tempFile.removeCallback();
   }
 }

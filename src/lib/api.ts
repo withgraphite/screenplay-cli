@@ -17,13 +17,15 @@ export function requestWithArgs<TActualRoute extends TRoute>(
     ? Buffer
     : t.UnwrapSchemaMap<TActualRoute["params"]>,
   queryParams?: t.UnwrapSchemaMap<TActualRoute["queryParams"]>,
-  urlParams?: t.UnwrapSchemaMap<TActualRoute["urlParams"]>
+  urlParams?: t.UnwrapSchemaMap<TActualRoute["urlParams"]>,
+  headers?: t.UnwrapSchemaMap<TActualRoute["headers"]>
 ): Promise<t.UnwrapSchemaMap<TActualRoute["response"]>> {
   return request.requestWithArgs(
     API_SERVER,
     route,
     params,
     queryParams,
-    urlParams
+    urlParams,
+    headers
   );
 }

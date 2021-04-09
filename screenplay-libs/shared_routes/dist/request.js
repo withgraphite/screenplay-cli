@@ -57,7 +57,7 @@ exports.endpointWithArgs = endpointWithArgs;
 function request(url, verb, headers, body) {
     return fetch(url, Object.assign({ method: verb, mode: "cors", credentials: "include", headers: headers }, (body ? { body: body } : {})));
 }
-function requestWithArgs(apiServer, route, params, queryParams, urlParams) {
+function requestWithArgs(apiServer, route, params, queryParams, urlParams, headers) {
     // Inspired by https://github.com/ReactTraining/react-router/blob/ea44618e68f6a112e48404b2ea0da3e207daf4f0/packages/react-router/modules/generatePath.js
     const path = urlParams
         ? pathToRegexp.compile(route.url)(urlParams)
@@ -75,9 +75,7 @@ function requestWithArgs(apiServer, route, params, queryParams, urlParams) {
     else {
         body = route.rawBody ? params : JSON.stringify(params);
     }
-    return request(url, route.method, {
-        "Content-Type": "text/plain",
-    }, body).then((response) => {
+    return request(url, route.method, Object.assign(Object.assign({}, headers), { "Content-Type": "text/plain" }), body).then((response) => {
         // if there is supposed to be a response type, parse it
         if (!!route.response && response.status === 200) {
             return response.json().then((body) => {

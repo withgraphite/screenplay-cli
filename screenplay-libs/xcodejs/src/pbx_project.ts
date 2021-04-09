@@ -2,6 +2,7 @@ import chalk from "chalk";
 import { execSync } from "child_process";
 import fs from "fs-extra";
 import * as path from "path";
+import tmp from "tmp";
 import BuildSettings from "./build_settings";
 import PBXBuildConfig from "./pbx_build_config";
 import PBXBuildConfigList from "./pbx_build_config_list";
@@ -66,6 +67,12 @@ export default class PBXProj {
   }
 
   public writeFileSync(file: string, format = "xml1") {
+    /**
+     * Note: Our plutil shim on linux can't take input from stdin.
+     */
+    const tempFile = tmp.fileSync();
+    fs.writeFileSync(tempFile.name, JSON.stringify(this._defn));
+
     // Strangely, xcode can accept ANY format of the pbxproj (including JSON!)
     // just when you resave the project, it will get rewritten as a traditional one
     //
@@ -74,9 +81,10 @@ export default class PBXProj {
 
     // fs.writeFileSync(file, JSON.stringify(this._defn));
 
-    execSync(`plutil -convert ${format} - -o "${file}"`, {
-      input: JSON.stringify(this._defn),
+    execSync(`plutil -convert ${format} "${tempFile.name}" -o "${file}"`, {
+      stdio: "inherit",
     });
+    tempFile.removeCallback();
   }
 
   // *******

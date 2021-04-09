@@ -1,30 +1,7 @@
 import chalk from "chalk";
 import fs from "fs-extra";
 import path from "path";
-import { PBXNativeTarget, PBXProject, PorkspacePath, XCSchemes } from "xcodejs";
-
-export function determineScheme(opts: {
-  appTargetName: string;
-  porkspace: PorkspacePath;
-  schemeName?: string;
-}): string {
-  const possibleSchemes = XCSchemes.list(opts.porkspace);
-  if (!opts.schemeName) {
-    if (possibleSchemes.includes(opts.appTargetName)) {
-      return opts.appTargetName;
-    } else {
-      throw Error(
-        `Could not infer app scheme name, please provide it using the --app-scheme flag`
-      );
-    }
-  }
-  if (possibleSchemes.includes(opts.schemeName)) {
-    return opts.schemeName;
-  }
-  throw Error(
-    `Possible schemes ${possibleSchemes} do not include ${opts.schemeName}`
-  );
-}
+import { PBXNativeTarget, PBXProject } from "xcodejs";
 
 export function error(msg: string): never {
   console.log(chalk.yellow(`ERROR: ${msg}`));

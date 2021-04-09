@@ -139,7 +139,7 @@ function addTests(opts) {
     console.log("Adding tests to scheme");
     xcodejs_1.XCSchemes.addTests({
         projectPath: opts.projectPath,
-        appScheme: opts.appScheme,
+        appScheme: opts.appTarget.name(),
         workspacePath: opts.workspacePath,
         nativeTargetID,
         xcodeFileName: opts.xcodeFileName,

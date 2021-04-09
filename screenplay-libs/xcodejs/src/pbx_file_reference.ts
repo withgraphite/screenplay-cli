@@ -25,7 +25,7 @@ function findParents(id: string, group: PBXGroup): PBXGroup[] | null {
 //   isa = PBXFileReference;
 //   lastKnownFileType = wrapper.framework;
 //   name = NextcloudOld.framework;
-//   path = "../../../../Users/gregfoster/monologue/test-data/frameworks/test-frameworks/NextcloudOld.framework";
+//   path = "../../../../Users/greg_foster/monologue/test-data/frameworks/test-frameworks/NextcloudOld.framework";
 //   sourceTree = "<group>";
 // };
 

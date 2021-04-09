@@ -5,11 +5,22 @@ import * as t from "retype";
  * which went well, please just hit our monolith directly.
  */
 declare const API_ROUTES: {
-    readonly intercut: {
+    readonly oldIntercut: {
         readonly method: "POST";
         readonly url: "/intercut/:releaseSecret/telemetry";
         readonly urlParams: {
             readonly releaseSecret: t.StringType;
+        };
+        readonly params: {
+            readonly kind: t.LiteralType<"ERROR">;
+            readonly errorKind: t.StringType;
+        };
+    };
+    readonly intercut: {
+        readonly method: "POST";
+        readonly url: "/intercut/telemetry";
+        readonly headers: {
+            readonly "X-SP-APP-SECRET": t.StringType;
         };
         readonly params: {
             readonly kind: t.LiteralType<"ERROR">;

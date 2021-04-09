@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import { PBXProject, Utils } from "xcodejs";
+import { PBXBuildPhase, PBXProject, Utils } from "xcodejs";
 
 export function addScreenplayBuildPhase(
   xcodeProject: PBXProject,
   shellScript: string
-): string {
+): PBXBuildPhase {
   const buildPhaseId = Utils.generateUUID(xcodeProject.allObjectKeys());
   xcodeProject._defn["objects"][buildPhaseId] = {
     isa: "PBXShellScriptBuildPhase",
@@ -13,7 +13,8 @@ export function addScreenplayBuildPhase(
     runOnlyForDeploymentPostprocessing: "0",
     shellPath: "/bin/sh",
     shellScript: shellScript,
+    inputPaths: ["$(CODESIGNING_FOLDER_PATH)/Info.plist"],
   };
 
-  return buildPhaseId;
+  return new PBXBuildPhase(buildPhaseId, xcodeProject);
 }

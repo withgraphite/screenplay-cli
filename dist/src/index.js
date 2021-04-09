@@ -45,11 +45,6 @@ yargs_1.default
         type: "string",
         demandOption: false,
     })
-        .option("app-scheme", {
-        describe: "The name of the scheme which builds your app",
-        type: "string",
-        demandOption: false,
-    })
         .option("workspace", {
         describe: "The workspace you use to build the app",
         type: "string",
@@ -65,6 +60,12 @@ yargs_1.default
         .option("with-extensions", {
         type: "boolean",
         describe: "Whether to support extensions.",
+        default: false,
+        demandOption: false,
+    })
+        .option("always-enable", {
+        type: "boolean",
+        describe: "Whether to ALWAYS Screenplay builds (regardless of the configuration).",
         default: false,
         demandOption: false,
     })
@@ -123,11 +124,6 @@ yargs_1.default
         type: "string",
         demandOption: true,
     })
-        .option("app-scheme", {
-        describe: "The name of the scheme which builds your app",
-        type: "string",
-        demandOption: false,
-    })
         .option("workspace", {
         describe: "The workspace you use to build the app",
         type: "string",
@@ -135,21 +131,33 @@ yargs_1.default
         demandOption: false,
     });
 }, (argv) => {
-    return install_1.install(Object.assign(Object.assign({}, argv), { "with-tests": false, key: undefined, appToken: "TESTONLY" }), argv);
+    return install_1.install(Object.assign(Object.assign({}, argv), { "with-tests": false, key: undefined, appToken: "TESTONLY", "always-enable": true }), argv);
 })
     .command("uninstall <xcode-project>", "Remove Screenplay entirely from the specified xcode project", (yargs) => {
-    yargs.positional("xcode-project", {
+    yargs
+        .positional("xcode-project", {
         describe: "The Xcode project to install Screenplay on",
+    })
+        .option("app-target", {
+        describe: "The name of the target which builds your app",
+        type: "string",
+        demandOption: false,
     });
 }, (argv) => {
-    uninstall_1.uninstall(argv["xcode-project"]);
+    uninstall_1.uninstall(argv["xcode-project"], argv["app-target"]);
 })
     .command("reinstall <xcode-project>", "Reinstall Screenplay on the specified xcode project", (yargs) => {
-    yargs.positional("xcode-project", {
+    yargs
+        .positional("xcode-project", {
         describe: "The Xcode project to install Screenplay on",
+    })
+        .option("app-target", {
+        describe: "The name of the target which builds your app",
+        type: "string",
+        demandOption: false,
     });
 }, (argv) => __awaiter(void 0, void 0, void 0, function* () {
-    yield reinstall_1.reinstall(argv["xcode-project"]);
+    yield reinstall_1.reinstall(argv["xcode-project"], argv["app-target"]);
 }))
     .command("debug-metadata <xcode-project>", "Print the detected name and icon for an xcode project", (yargs) => {
     yargs.positional("xcode-project", {

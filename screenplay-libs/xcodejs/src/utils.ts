@@ -40,7 +40,7 @@ export function getBundleInfoForFrameworkPath(
   frameworkPath: string
 ): BundleInfo {
   const plistPath = path.join(frameworkPath, "Info.plist");
-  const plistData = execSync("plutil -convert json -o - " + plistPath, {
+  const plistData = execSync(`plutil -convert json -o - "${plistPath}"`, {
     maxBuffer: 1024 * 1024 * 1024,
   });
   const plistJson = JSON.parse(plistData.toString());

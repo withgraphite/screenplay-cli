@@ -4,15 +4,15 @@ export declare function addScreenplayAppTarget(opts: {
     xcodeProjectPath: string;
     xcodeProject: PBXProject;
     appTarget: PBXNativeTarget;
-    appScheme: string;
     workspacePath?: string;
     versionBundleDestination?: string;
     withExtensions?: boolean;
     withFromApp?: boolean;
+    alwaysEnable?: boolean;
 } & ({
     newAppToken: string;
     appToken: undefined;
 } | {
     appToken: string;
     newAppToken: undefined;
-})): Promise<readonly [string | null, PBXNativeTarget]>;
+})): Promise<string | null>;

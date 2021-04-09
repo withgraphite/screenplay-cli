@@ -15,7 +15,6 @@ export function addTests(opts: {
   workspacePath?: string;
   xcodeProject: PBXProject;
   appTarget: PBXNativeTarget;
-  appScheme: string;
 }) {
   // Copy files
   const uiTestDir = path.join(opts.projectPath, "../ScreenplayUITests");
@@ -174,7 +173,7 @@ export function addTests(opts: {
   console.log("Adding tests to scheme");
   XCSchemes.addTests({
     projectPath: opts.projectPath,
-    appScheme: opts.appScheme,
+    appScheme: opts.appTarget.name(),
     workspacePath: opts.workspacePath,
     nativeTargetID,
     xcodeFileName: opts.xcodeFileName,

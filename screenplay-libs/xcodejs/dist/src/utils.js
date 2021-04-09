@@ -50,7 +50,7 @@ function patchPath(initialPath, filePathPrefix) {
 exports.patchPath = patchPath;
 function getBundleInfoForFrameworkPath(frameworkPath) {
     const plistPath = path.join(frameworkPath, "Info.plist");
-    const plistData = child_process_1.execSync("plutil -convert json -o - " + plistPath, {
+    const plistData = child_process_1.execSync(`plutil -convert json -o - "${plistPath}"`, {
         maxBuffer: 1024 * 1024 * 1024,
     });
     const plistJson = JSON.parse(plistData.toString());

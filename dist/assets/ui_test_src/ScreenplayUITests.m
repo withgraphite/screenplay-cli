@@ -54,4 +54,16 @@ static bool imageIsNotAllWhite(UIImage *img) {
     XCTAssertGreaterThan(children.count, 3); // iOS creates a few default descendants for us
 }
 
+#ifdef Screenplay_Test_Purple
+
+- (void)testPurple {
+    XCUIApplication *app = [[XCUIApplication alloc] init];
+    [app launch];
+    [app.buttons[@"Get started"] tap];
+    sleep(1);
+    XCTAssert(app.buttons[@" "].exists);
+}
+
+#endif
+
 @end

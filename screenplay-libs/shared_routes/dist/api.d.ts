@@ -21,21 +21,28 @@ declare const API_ROUTES: {
         };
     };
     readonly scripts: {
-        readonly buildPhaseDownloader: {
+        readonly buildPhaseDownloaderOld: {
             readonly method: "GET";
             readonly url: "/app-secret/:appSecret/build-phase-downloader";
             readonly urlParams: {
                 readonly appSecret: t.StringType;
             };
         };
+        readonly buildPhaseDownloader: {
+            readonly method: "GET";
+            readonly url: "/build-phase-downloader";
+            readonly headers: {
+                readonly "X-SP-APP-SECRET": t.StringType;
+            };
+        };
     };
     readonly versionBundles: {
         readonly upload: {
             readonly method: "POST";
-            readonly url: "/app-secret/:appSecret/versions";
+            readonly url: "/app/versions";
             readonly queryParams: {};
-            readonly urlParams: {
-                readonly appSecret: t.StringType;
+            readonly headers: {
+                readonly "X-SP-APP-SECRET": t.StringType;
             };
             readonly params: {
                 readonly semver: t.StringType;
@@ -52,17 +59,19 @@ declare const API_ROUTES: {
         };
         readonly markUploadComplete: {
             readonly method: "POST";
-            readonly url: "/app-secret/:appSecret/version/:versionId/upload-complete";
+            readonly url: "/app/version/:versionId/upload-complete";
+            readonly headers: {
+                readonly "X-SP-APP-SECRET": t.StringType;
+            };
             readonly urlParams: {
-                readonly appSecret: t.StringType;
                 readonly versionId: t.StringType;
             };
         };
         readonly downloadLatest: {
             readonly method: "GET";
-            readonly url: "/app-secret/:appSecret/version-bundles";
-            readonly urlParams: {
-                readonly appSecret: t.StringType;
+            readonly url: "/app/version-bundles";
+            readonly headers: {
+                readonly "X-SP-APP-SECRET": t.StringType;
             };
             readonly queryParams: {
                 readonly archs: t.StringType;
@@ -74,22 +83,6 @@ declare const API_ROUTES: {
                     url: string;
                     kind: "source" | "app";
                 }>;
-            };
-        };
-        readonly download: {
-            readonly method: "GET";
-            readonly url: "/version-bundles/:semver";
-            readonly urlParams: {
-                readonly semver: t.StringType;
-            };
-            readonly queryParams: {
-                readonly appSecret: t.StringType;
-                readonly archs: t.StringType;
-            };
-            readonly response: {
-                readonly versionBundleId: t.StringType;
-                readonly versionBundleUrl: t.StringType;
-                readonly versionBundleKind: t.PluralUnionType<t.LiteralType<"source" | "app">, "source" | "app">;
             };
         };
     };
@@ -140,17 +133,17 @@ declare const API_ROUTES: {
         };
         readonly updateAppIcon: {
             readonly method: "PUT";
-            readonly url: "/app-secret/:appSecret/app-icon";
-            readonly urlParams: {
-                readonly appSecret: t.StringType;
+            readonly url: "/app/icon";
+            readonly headers: {
+                readonly "X-SP-APP-SECRET": t.StringType;
             };
             readonly rawBody: true;
         };
         readonly createRelease: {
             readonly method: "POST";
-            readonly url: "/app-secret/:appSecret/releases";
-            readonly urlParams: {
-                readonly appSecret: t.StringType;
+            readonly url: "/app/releases";
+            readonly headers: {
+                readonly "X-SP-APP-SECRET": t.StringType;
             };
             readonly params: {
                 readonly versions: t.ArrayType<{
@@ -163,11 +156,27 @@ declare const API_ROUTES: {
                 readonly releaseSecret: t.StringType;
             };
         };
+        readonly createBuild: {
+            readonly method: "POST";
+            readonly url: "/app/builds";
+            readonly headers: {
+                readonly "X-SP-APP-SECRET": t.StringType;
+            };
+            readonly params: {
+                readonly versions: t.ArrayType<string>;
+                readonly includeDefaultVersions: t.BooleanType;
+                readonly maxSemverForDefaultVersions: t.StringType;
+                readonly archs: t.ArrayType<string>;
+            };
+            readonly response: {
+                readonly id: t.StringType;
+            };
+        };
         readonly buildMetadata: {
             readonly method: "POST";
-            readonly url: "/app-secret/:appSecret/build-metadata";
-            readonly urlParams: {
-                readonly appSecret: t.StringType;
+            readonly url: "/app/build-metadata";
+            readonly headers: {
+                readonly "X-SP-APP-SECRET": t.StringType;
             };
             readonly params: {
                 readonly latestVersionSizeInKb: t.NumberType;
@@ -179,6 +188,22 @@ declare const API_ROUTES: {
                 readonly buildPhaseVersion: t.StringType;
                 readonly archs: t.ArrayType<string>;
                 readonly isRelease: t.BooleanType;
+            };
+        };
+    };
+    readonly build: {
+        readonly status: {
+            readonly method: "GET";
+            readonly url: "/build/:buildId/status";
+            readonly urlParams: {
+                readonly buildId: t.StringType;
+            };
+            readonly headers: {
+                readonly "X-SP-APP-SECRET": t.StringType;
+            };
+            readonly response: {
+                readonly status: t.PluralUnionType<t.LiteralType<"BOOTING" | "WORKING" | "SUCCESS" | "FAILURE">, "BOOTING" | "WORKING" | "SUCCESS" | "FAILURE">;
+                readonly downloadURL: t.UnionType<string, undefined>;
             };
         };
     };
@@ -542,7 +567,7 @@ declare const API_ROUTES: {
         };
     };
     readonly intercut: {
-        readonly flags: {
+        readonly oldFlags: {
             readonly method: "POST";
             readonly url: "/intercut/:releaseSecret/flags";
             readonly urlParams: {
@@ -557,6 +582,22 @@ declare const API_ROUTES: {
             readonly response: {
                 readonly version: t.NumberType;
                 readonly backgroundTerminationEnabled: t.BooleanType;
+            };
+        };
+        readonly flags: {
+            readonly method: "POST";
+            readonly url: "/intercut/flags";
+            readonly headers: {
+                readonly "X-SP-APP-SECRET": t.StringType;
+            };
+            readonly params: {
+                readonly persistId: t.StringType;
+                readonly os: t.StringType;
+                readonly device: t.StringType;
+                readonly bootedVersion: t.UnionType<number, undefined>;
+            };
+            readonly response: {
+                readonly version: t.NumberType;
             };
         };
     };

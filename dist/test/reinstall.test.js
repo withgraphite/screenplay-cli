@@ -18,12 +18,12 @@ mocha_1.describe("reinstall", function () {
         const xcodeprojProjectDir = path_1.default.join(xcodeprojDir, "project.pbxproj");
         child_process_1.execSync(`yarn --cwd .. cli install --appToken FAKE_TOKEN --xcode-project "${xcodeprojDir}"`, { stdio: "inherit" });
         const installedProject = xcodejs_1.PBXProject.readFileSync(xcodeprojProjectDir);
-        child_process_1.execSync(`yarn --cwd .. cli reinstall "${xcodeprojDir}"`, {
+        child_process_1.execSync(`yarn --cwd .. cli reinstall "${xcodeprojDir}" --app-target blank-objc-storyboard`, {
             stdio: "inherit",
         });
         const reinstalledProject = xcodejs_1.PBXProject.readFileSync(xcodeprojProjectDir);
         chai_1.expect(JSON.stringify(reinstalledProject._defn, Object.keys(reinstalledProject._defn).sort(), 2).replace(/[A-Z0-9]{24}/g, "123")).to.deep.equal(JSON.stringify(installedProject._defn, Object.keys(installedProject._defn).sort(), 2).replace(/[A-Z0-9]{24}/g, "123"));
         done();
-    }).timeout(20000);
+    }).timeout(60000);
 });
 //# sourceMappingURL=reinstall.test.js.map

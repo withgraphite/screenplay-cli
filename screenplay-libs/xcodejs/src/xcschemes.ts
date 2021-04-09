@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import path from "path";
 import convert from "xml-js";
 import PBXNativeTarget from "./pbx_native_target";
+import PBXProj from "./pbx_project";
 import { PorkspacePath } from "./porkspace_type";
 
 export function list(porkspacePath: PorkspacePath): string[] {
@@ -176,6 +177,46 @@ function recursivelyMutateBuildRefs(options: {
       });
     }
   });
+}
+
+export function removeAllTests(opts: {
+  projectPath: string;
+  workspacePath?: string;
+  appScheme: string;
+  project: PBXProj;
+}) {
+  const appSchemePath = findSrcSchemePath({
+    projectPath: opts.projectPath,
+    schemeName: opts.appScheme,
+    workspacePath: opts.workspacePath,
+  });
+  if (!appSchemePath) {
+    throw Error(`Failed to find scheme ${opts.appScheme}`);
+  }
+  const data = fs.readFileSync(appSchemePath);
+  const defn: any = convert.xml2js(data.toString(), { compact: true });
+
+  // If there is only one value (i.e. it's not an array), we can assume we
+  // need to build that one
+  if (
+    Array.isArray(
+      defn["Scheme"]["BuildAction"]["BuildActionEntries"]["BuildActionEntry"]
+    )
+  ) {
+    defn["Scheme"]["BuildAction"]["BuildActionEntries"][
+      "BuildActionEntry"
+    ] = defn["Scheme"]["BuildAction"]["BuildActionEntries"][
+      "BuildActionEntry"
+    ].filter((entry) => {
+      return !entry["BuildableReference"]["_attributes"][
+        "BuildableName"
+      ].endsWith("xctest");
+    });
+  }
+
+  defn["Scheme"]["TestAction"]["Testables"]["TestableReference"] = [];
+
+  fs.writeFileSync(appSchemePath, convert.js2xml(defn, { compact: true }));
 }
 
 export function addTests(opts: {

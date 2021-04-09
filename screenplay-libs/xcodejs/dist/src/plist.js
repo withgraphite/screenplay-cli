@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Plist = void 0;
 const chalk_1 = __importDefault(require("chalk"));
 const child_process_1 = require("child_process");
+const fs_extra_1 = __importDefault(require("fs-extra"));
+const tmp_1 = __importDefault(require("tmp"));
 // Note: DO NOT ASSUME this is an info.plist (it could also be entitlements)
 // If you need to add info.plist specific methods here, please subclass this
 class Plist {
@@ -24,6 +26,18 @@ class Plist {
     }
     get(key) {
         return this._defn[key];
+    }
+    dig(...keys) {
+        let cur = this._defn;
+        for (const key in keys) {
+            if (cur[key]) {
+                cur = cur[key];
+            }
+            else {
+                return undefined;
+            }
+        }
+        return cur;
     }
     // This is ignoring plist modifiers for now...
     static _renderWithValues(node, values) {
@@ -55,11 +69,11 @@ class Plist {
         }
         // No specific handler found, assuming they must all be identical
         const firstValue = values[0];
-        const firstValueJSON = JSON.stringify(firstValue);
+        const firstValueJSON = JSON.stringify(firstValue, Object.keys(firstValue).sort());
         if (!values.every((value) => {
             // This isn't entirely correct, JSON doesn't guarantee ordering of dictionary keys, but
             // works for now
-            return JSON.stringify(value) === firstValueJSON;
+            return (JSON.stringify(value, Object.keys(value).sort()) === firstValueJSON);
         })) {
             const errorMessage = "Different values detected for key '" +
                 key +
@@ -95,9 +109,13 @@ class Plist {
         return new Plist(mergedDefn);
     }
     writeFile(file) {
-        child_process_1.execSync(`plutil -convert xml1 - -o "${file}"`, {
-            input: JSON.stringify(this._defn),
-        });
+        /**
+         * Note: Our plutil shim on linux can't take input from stdin.
+         */
+        const tempFile = tmp_1.default.fileSync();
+        fs_extra_1.default.writeFileSync(tempFile.name, JSON.stringify(this._defn));
+        child_process_1.execSync(`plutil -convert xml1 "${tempFile.name}" -o "${file}"`);
+        tempFile.removeCallback();
     }
 }
 exports.Plist = Plist;

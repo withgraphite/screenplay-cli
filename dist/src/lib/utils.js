@@ -3,27 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.extractTarget = exports.readProject = exports.warn = exports.error = exports.determineScheme = void 0;
+exports.extractTarget = exports.readProject = exports.warn = exports.error = void 0;
 const chalk_1 = __importDefault(require("chalk"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
 const xcodejs_1 = require("xcodejs");
-function determineScheme(opts) {
-    const possibleSchemes = xcodejs_1.XCSchemes.list(opts.porkspace);
-    if (!opts.schemeName) {
-        if (possibleSchemes.includes(opts.appTargetName)) {
-            return opts.appTargetName;
-        }
-        else {
-            throw Error(`Could not infer app scheme name, please provide it using the --app-scheme flag`);
-        }
-    }
-    if (possibleSchemes.includes(opts.schemeName)) {
-        return opts.schemeName;
-    }
-    throw Error(`Possible schemes ${possibleSchemes} do not include ${opts.schemeName}`);
-}
-exports.determineScheme = determineScheme;
 function error(msg) {
     console.log(chalk_1.default.yellow(`ERROR: ${msg}`));
     process.exit(1);

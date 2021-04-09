@@ -20,21 +20,28 @@ const API_ROUTES = asRouteTree({
     },
   },
   scripts: {
-    buildPhaseDownloader: {
+    buildPhaseDownloaderOld: {
       method: "GET",
       url: "/app-secret/:appSecret/build-phase-downloader",
       urlParams: {
         appSecret: t.string,
       },
     },
+    buildPhaseDownloader: {
+      method: "GET",
+      url: "/build-phase-downloader",
+      headers: {
+        "X-SP-APP-SECRET": t.string,
+      },
+    },
   },
   versionBundles: {
     upload: {
       method: "POST",
-      url: "/app-secret/:appSecret/versions",
+      url: "/app/versions",
       queryParams: {},
-      urlParams: {
-        appSecret: t.string,
+      headers: {
+        "X-SP-APP-SECRET": t.string,
       },
       params: {
         semver: t.string,
@@ -51,17 +58,19 @@ const API_ROUTES = asRouteTree({
     },
     markUploadComplete: {
       method: "POST",
-      url: "/app-secret/:appSecret/version/:versionId/upload-complete",
+      url: "/app/version/:versionId/upload-complete",
+      headers: {
+        "X-SP-APP-SECRET": t.string,
+      },
       urlParams: {
-        appSecret: t.string,
         versionId: t.string,
       },
     },
     downloadLatest: {
       method: "GET",
-      url: "/app-secret/:appSecret/version-bundles",
-      urlParams: {
-        appSecret: t.string,
+      url: "/app/version-bundles",
+      headers: {
+        "X-SP-APP-SECRET": t.string,
       },
       queryParams: {
         archs: t.string,
@@ -75,22 +84,6 @@ const API_ROUTES = asRouteTree({
             kind: t.literals(["app", "source"] as const),
           })
         ),
-      },
-    },
-    download: {
-      method: "GET",
-      url: "/version-bundles/:semver",
-      urlParams: {
-        semver: t.string,
-      },
-      queryParams: {
-        appSecret: t.string,
-        archs: t.string,
-      },
-      response: {
-        versionBundleId: t.string,
-        versionBundleUrl: t.string,
-        versionBundleKind: t.literals(["app", "source"] as const),
       },
     },
   },
@@ -139,17 +132,17 @@ const API_ROUTES = asRouteTree({
     },
     updateAppIcon: {
       method: "PUT",
-      url: "/app-secret/:appSecret/app-icon",
-      urlParams: {
-        appSecret: t.string,
+      url: "/app/icon",
+      headers: {
+        "X-SP-APP-SECRET": t.string,
       },
       rawBody: true,
     },
     createRelease: {
       method: "POST",
-      url: "/app-secret/:appSecret/releases",
-      urlParams: {
-        appSecret: t.string,
+      url: "/app/releases",
+      headers: {
+        "X-SP-APP-SECRET": t.string,
       },
       params: {
         versions: t.array(
@@ -164,11 +157,27 @@ const API_ROUTES = asRouteTree({
         releaseSecret: t.string,
       },
     },
+    createBuild: {
+      method: "POST",
+      url: "/app/builds",
+      headers: {
+        "X-SP-APP-SECRET": t.string,
+      },
+      params: {
+        versions: t.array(t.string),
+        includeDefaultVersions: t.boolean,
+        maxSemverForDefaultVersions: t.string,
+        archs: t.array(t.string),
+      },
+      response: {
+        id: t.string,
+      },
+    },
     buildMetadata: {
       method: "POST",
-      url: "/app-secret/:appSecret/build-metadata",
-      urlParams: {
-        appSecret: t.string,
+      url: "/app/build-metadata",
+      headers: {
+        "X-SP-APP-SECRET": t.string,
       },
       params: {
         latestVersionSizeInKb: t.number,
@@ -180,6 +189,27 @@ const API_ROUTES = asRouteTree({
         buildPhaseVersion: t.string,
         archs: t.array(t.string),
         isRelease: t.boolean,
+      },
+    },
+  },
+  build: {
+    status: {
+      method: "GET",
+      url: "/build/:buildId/status",
+      urlParams: {
+        buildId: t.string,
+      },
+      headers: {
+        "X-SP-APP-SECRET": t.string,
+      },
+      response: {
+        status: t.literals([
+          "BOOTING",
+          "WORKING",
+          "SUCCESS",
+          "FAILURE",
+        ] as const),
+        downloadURL: t.optional(t.string),
       },
     },
   },
@@ -594,7 +624,7 @@ const API_ROUTES = asRouteTree({
     },
   },
   intercut: {
-    flags: {
+    oldFlags: {
       method: "POST",
       url: "/intercut/:releaseSecret/flags",
       urlParams: {
@@ -609,6 +639,22 @@ const API_ROUTES = asRouteTree({
       response: {
         version: t.number,
         backgroundTerminationEnabled: t.boolean,
+      },
+    },
+    flags: {
+      method: "POST",
+      url: "/intercut/flags",
+      headers: {
+        "X-SP-APP-SECRET": t.string,
+      },
+      params: {
+        persistId: t.string,
+        os: t.string,
+        device: t.string,
+        bootedVersion: t.optional(t.number),
+      },
+      response: {
+        version: t.number,
       },
     },
   },
