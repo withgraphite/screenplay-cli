@@ -24,8 +24,11 @@ function readProject(projectPath) {
     return xcodejs_1.PBXProject.readFileSync(path_1.default.join(projectPath, "project.pbxproj"));
 }
 exports.readProject = readProject;
-function extractTarget(project, targetName) {
-    const targets = project.appTargets();
+function extractTarget(project, targetName, excludeScreenplayPrefixedNames) {
+    let targets = project.appTargets();
+    if (excludeScreenplayPrefixedNames) {
+        targets = targets.filter((target) => !target.name().startsWith("Screenplay-"));
+    }
     if (targets.length === 0) {
         error("No app targets detected in the Xcode project.");
     }

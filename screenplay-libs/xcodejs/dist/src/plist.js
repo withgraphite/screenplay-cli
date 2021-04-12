@@ -16,6 +16,7 @@ class Plist {
     }
     static fromFile(file) {
         const data = child_process_1.execSync(`plutil -convert json -o - "${file}"`);
+        console.log(data.toString());
         const defn = JSON.parse(data.toString());
         return new Plist(defn);
     }

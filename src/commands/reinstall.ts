@@ -10,7 +10,7 @@ export async function reinstall(
   appTargetName?: string
 ) {
   const xcodeProject = readProject(xcodeProjectPath);
-  const appTarget = extractTarget(xcodeProject, appTargetName);
+  const appTarget = extractTarget(xcodeProject, appTargetName, true);
 
   // get details
   const installDetails = extractScreenplayReinstallDetails(
@@ -20,7 +20,11 @@ export async function reinstall(
   );
 
   // uninstall
-  removeScreenplayManagedTargetsAndProducts(xcodeProject, appTarget);
+  removeScreenplayManagedTargetsAndProducts(
+    xcodeProjectPath,
+    xcodeProject,
+    appTarget
+  );
   xcodeProject.writeFileSync(path.join(xcodeProjectPath, "project.pbxproj"));
 
   // reinstall

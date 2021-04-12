@@ -20,11 +20,11 @@ const uninstall_1 = require("./uninstall");
 function reinstall(xcodeProjectPath, appTargetName) {
     return __awaiter(this, void 0, void 0, function* () {
         const xcodeProject = utils_1.readProject(xcodeProjectPath);
-        const appTarget = utils_1.extractTarget(xcodeProject, appTargetName);
+        const appTarget = utils_1.extractTarget(xcodeProject, appTargetName, true);
         // get details
         const installDetails = extractScreenplayReinstallDetails(xcodeProjectPath, xcodeProject, appTarget);
         // uninstall
-        uninstall_1.removeScreenplayManagedTargetsAndProducts(xcodeProject, appTarget);
+        uninstall_1.removeScreenplayManagedTargetsAndProducts(xcodeProjectPath, xcodeProject, appTarget);
         xcodeProject.writeFileSync(path_1.default.join(xcodeProjectPath, "project.pbxproj"));
         // reinstall
         yield install_1.install(installDetails);

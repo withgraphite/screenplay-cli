@@ -1,11 +1,16 @@
+import fs from "fs-extra";
 import path from "path";
-import { PBXNativeTarget, PBXProject } from "xcodejs";
+import { PBXNativeTarget, PBXProject, XCSchemes } from "xcodejs";
 import { extractTarget, readProject } from "../lib/utils";
 
 export function uninstall(xcodeProjectPath: string, appTargetName?: string) {
   const xcodeProject = readProject(xcodeProjectPath);
   const appTarget = extractTarget(xcodeProject, appTargetName);
-  removeScreenplayManagedTargetsAndProducts(xcodeProject, appTarget);
+  removeScreenplayManagedTargetsAndProducts(
+    xcodeProjectPath,
+    xcodeProject,
+    appTarget
+  );
   xcodeProject.writeFileSync(path.join(xcodeProjectPath, "project.pbxproj"));
 
   console.log(`Screenplay has been uninstalled.`);
@@ -54,6 +59,7 @@ function removeScreenplayIcon(xcodeProject: PBXProject) {
 }
 
 export function removeScreenplayManagedTargetsAndProducts(
+  xcodeProjectPath: string,
   xcodeProject: PBXProject,
   appTarget: PBXNativeTarget
 ) {
@@ -66,6 +72,14 @@ export function removeScreenplayManagedTargetsAndProducts(
       // TODO: At some point we should update this heuristic
       // (Maybe check a custom build setting or something)
       if (target.name() === "Screenplay-" + appTarget.name()) {
+        const schemePath = XCSchemes.findSrcSchemePath({
+          projectPath: xcodeProjectPath,
+          schemeName: target.name(),
+        });
+        if (schemePath) {
+          fs.removeSync(schemePath);
+        }
+
         target
           .buildConfigurationList()
           .buildConfigs()

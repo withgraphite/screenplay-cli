@@ -4,12 +4,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.removeScreenplayManagedTargetsAndProducts = exports.uninstall = void 0;
+const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
+const xcodejs_1 = require("xcodejs");
 const utils_1 = require("../lib/utils");
 function uninstall(xcodeProjectPath, appTargetName) {
     const xcodeProject = utils_1.readProject(xcodeProjectPath);
     const appTarget = utils_1.extractTarget(xcodeProject, appTargetName);
-    removeScreenplayManagedTargetsAndProducts(xcodeProject, appTarget);
+    removeScreenplayManagedTargetsAndProducts(xcodeProjectPath, xcodeProject, appTarget);
     xcodeProject.writeFileSync(path_1.default.join(xcodeProjectPath, "project.pbxproj"));
     console.log(`Screenplay has been uninstalled.`);
 }
@@ -42,7 +44,7 @@ function removeScreenplayIcon(xcodeProject) {
         delete xcodeProject._defn["objects"][key];
     });
 }
-function removeScreenplayManagedTargetsAndProducts(xcodeProject, appTarget) {
+function removeScreenplayManagedTargetsAndProducts(xcodeProjectPath, xcodeProject, appTarget) {
     // uninstall v1
     removeScreenplayIcon(xcodeProject);
     xcodeProject
@@ -52,6 +54,13 @@ function removeScreenplayManagedTargetsAndProducts(xcodeProject, appTarget) {
         // TODO: At some point we should update this heuristic
         // (Maybe check a custom build setting or something)
         if (target.name() === "Screenplay-" + appTarget.name()) {
+            const schemePath = xcodejs_1.XCSchemes.findSrcSchemePath({
+                projectPath: xcodeProjectPath,
+                schemeName: target.name(),
+            });
+            if (schemePath) {
+                fs_extra_1.default.removeSync(schemePath);
+            }
             target
                 .buildConfigurationList()
                 .buildConfigs()

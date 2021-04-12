@@ -21,9 +21,15 @@ export function readProject(projectPath: string): PBXProject {
 
 export function extractTarget(
   project: PBXProject,
-  targetName: string | undefined
+  targetName: string | undefined,
+  excludeScreenplayPrefixedNames?: boolean
 ): PBXNativeTarget {
-  const targets = project.appTargets();
+  let targets = project.appTargets();
+  if (excludeScreenplayPrefixedNames) {
+    targets = targets.filter(
+      (target) => !target.name().startsWith("Screenplay-")
+    );
+  }
   if (targets.length === 0) {
     error("No app targets detected in the Xcode project.");
   } else if (targets.length === 1) {
