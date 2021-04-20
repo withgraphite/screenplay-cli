@@ -4,9 +4,6 @@ export declare type BaseArgs = {
 };
 export declare type AddTargetArgs = BaseArgs & {
     "app-target"?: string;
-    "with-extensions"?: boolean;
-    "with-from-app"?: boolean;
-    workspace?: string;
 };
 export declare type InstallArgs = AddTargetArgs & {
     "with-tests": boolean;

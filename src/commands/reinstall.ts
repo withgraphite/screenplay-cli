@@ -62,14 +62,6 @@ export function extractScreenplayReinstallDetails(
     "with-tests": false,
     key: undefined,
     appToken: settings["SCREENPLAY_APP_KEY"],
-    "with-extensions": !!settings["SCREENPLAY_EXP_EXTENSIONS"],
-    "with-from-app": !!settings["SCREENPLAY_EXP_FROM_APP"],
     "always-enable": false,
-    workspace: settings["SCREENPLAY_WORKSPACE"]
-      ? path.join(
-          path.dirname(xcodeProjectPath),
-          settings["SCREENPLAY_WORKSPACE"]
-        )
-      : settings["SCREENPLAY_WORKSPACE"],
   };
 }

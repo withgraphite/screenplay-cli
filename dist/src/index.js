@@ -45,33 +45,15 @@ yargs_1.default
         type: "string",
         demandOption: false,
     })
-        .option("workspace", {
-        describe: "The workspace you use to build the app",
-        type: "string",
-        default: undefined,
-        demandOption: false,
-    })
         .option("with-tests", {
         type: "boolean",
         describe: "Whether to include tests to ensure the app boots properly. This is primarily just used to debug installations and during automated tests.",
         default: false,
         demandOption: false,
     })
-        .option("with-extensions", {
-        type: "boolean",
-        describe: "Whether to support extensions.",
-        default: false,
-        demandOption: false,
-    })
         .option("always-enable", {
         type: "boolean",
         describe: "Whether to ALWAYS Screenplay builds (regardless of the configuration).",
-        default: false,
-        demandOption: false,
-    })
-        .option("with-from-app", {
-        type: "boolean",
-        describe: "Whether to build from app.",
         default: false,
         demandOption: false,
     })
@@ -89,49 +71,6 @@ yargs_1.default
     });
 }, (argv) => {
     return install_1.install(argv);
-})
-    .command("version-bundle", "Add version bundle target", (yargs) => {
-    yargs
-        .option("xcode-project", {
-        describe: "The Xcode project to install Screenplay on",
-        type: "string",
-        demandOption: true,
-    })
-        .option("destination", {
-        describe: "Where to write the finished version bundle to",
-        type: "string",
-        demandOption: true,
-    })
-        .option("app-target", {
-        describe: "The name of the target which builds your app",
-        type: "string",
-        demandOption: false,
-    })
-        .option("with-extensions", {
-        type: "boolean",
-        describe: "Whether to support extensions.",
-        default: false,
-        demandOption: false,
-    })
-        .option("with-from-app", {
-        type: "boolean",
-        describe: "Whether to build from app.",
-        default: false,
-        demandOption: false,
-    })
-        .option("app-version", {
-        describe: "The version to show up in the info plist",
-        type: "string",
-        demandOption: true,
-    })
-        .option("workspace", {
-        describe: "The workspace you use to build the app",
-        type: "string",
-        default: undefined,
-        demandOption: false,
-    });
-}, (argv) => {
-    return install_1.install(Object.assign(Object.assign({}, argv), { "with-tests": false, key: undefined, appToken: "TESTONLY", "always-enable": true }), argv);
 })
     .command("uninstall <xcode-project>", "Remove Screenplay entirely from the specified xcode project", (yargs) => {
     yargs

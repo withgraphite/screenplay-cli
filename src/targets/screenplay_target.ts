@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import fs from "fs-extra";
-import os from "os";
 import path from "path";
 import {
   api,
@@ -42,27 +41,12 @@ elif [[ "YES" == $SCREENPLAY_ENABLED || ("NO" != $SCREENPLAY_ENABLED && "install
 fi`;
 }
 
-function generateVersionBundleScript(destination: string, workspace?: string) {
-  return `#!/bin/bash
-if [ "NO" != $SCREENPLAY_ENABLED ]; then
-  ${
-    process.env.GITHUB_WORKSPACE
-      ? process.env.GITHUB_WORKSPACE
-      : path.join(os.homedir(), "monologue")
-  }/public/build-phase/dist/build-phase.latest.pkg build-version-bundle --destination ${destination} ${
-    workspace ? `--workspace "${workspace}"` : ""
-  }
-  fi
-`;
-}
-
 export async function addScreenplayAppTarget(
   opts: {
     xcodeProjectPath: string;
     xcodeProject: PBXProject;
     appTarget: PBXNativeTarget;
     workspacePath?: string;
-    versionBundleDestination?: string;
     withExtensions?: boolean;
     withFromApp?: boolean;
     alwaysEnable?: boolean;
@@ -166,12 +150,7 @@ export async function addScreenplayAppTarget(
 
   const buildPhase = addScreenplayBuildPhase(
     opts.xcodeProject,
-    opts.versionBundleDestination
-      ? generateVersionBundleScript(
-          opts.versionBundleDestination,
-          opts.workspacePath
-        )
-      : generateBuildPhaseScript()
+    generateBuildPhaseScript()
   );
 
   opts.appTarget.addBuildPhase(buildPhase);

@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { execSync } from "child_process";
 import fs from "fs-extra";
-import { describe } from "mocha";
 import path from "path";
 import tmp from "tmp";
 import { PBXProject } from "xcodejs";
@@ -20,14 +19,14 @@ describe("reinstall", function () {
     const xcodeprojProjectDir = path.join(xcodeprojDir, "project.pbxproj");
 
     execSync(
-      `yarn --cwd .. cli install --appToken FAKE_TOKEN --xcode-project "${xcodeprojDir}"`,
+      `yarn cli install --appToken FAKE_TOKEN --xcode-project "${xcodeprojDir}"`,
       { stdio: "inherit" }
     );
 
     const installedProject = PBXProject.readFileSync(xcodeprojProjectDir);
 
     execSync(
-      `yarn --cwd .. cli reinstall "${xcodeprojDir}" --app-target blank-objc-storyboard`,
+      `yarn cli reinstall "${xcodeprojDir}" --app-target blank-objc-storyboard`,
       {
         stdio: "inherit",
       }

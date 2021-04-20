@@ -67,24 +67,6 @@ declare const API_ROUTES: {
                 readonly versionId: t.StringType;
             };
         };
-        readonly downloadLatest: {
-            readonly method: "GET";
-            readonly url: "/app/version-bundles";
-            readonly headers: {
-                readonly "X-SP-APP-SECRET": t.StringType;
-            };
-            readonly queryParams: {
-                readonly archs: t.StringType;
-                readonly maxSemver: t.StringType;
-            };
-            readonly response: {
-                readonly versionBundles: t.ArrayType<{
-                    id: string;
-                    url: string;
-                    kind: "source" | "app";
-                }>;
-            };
-        };
     };
     readonly demo: {
         readonly toggleRelease: {
@@ -139,23 +121,6 @@ declare const API_ROUTES: {
             };
             readonly rawBody: true;
         };
-        readonly createRelease: {
-            readonly method: "POST";
-            readonly url: "/app/releases";
-            readonly headers: {
-                readonly "X-SP-APP-SECRET": t.StringType;
-            };
-            readonly params: {
-                readonly versions: t.ArrayType<{
-                    embeddedId: number;
-                    id: string;
-                }>;
-            };
-            readonly response: {
-                readonly id: t.StringType;
-                readonly releaseSecret: t.StringType;
-            };
-        };
         readonly createBuild: {
             readonly method: "POST";
             readonly url: "/app/builds";
@@ -170,24 +135,6 @@ declare const API_ROUTES: {
             };
             readonly response: {
                 readonly id: t.StringType;
-            };
-        };
-        readonly buildMetadata: {
-            readonly method: "POST";
-            readonly url: "/app/build-metadata";
-            readonly headers: {
-                readonly "X-SP-APP-SECRET": t.StringType;
-            };
-            readonly params: {
-                readonly latestVersionSizeInKb: t.NumberType;
-                readonly totalBundleSizeInKb: t.NumberType;
-                readonly latestVersionTimeInS: t.NumberType;
-                readonly totalBundleTimeInS: t.NumberType;
-                readonly bundleId: t.StringType;
-                readonly releaseId: t.StringType;
-                readonly buildPhaseVersion: t.StringType;
-                readonly archs: t.ArrayType<string>;
-                readonly isRelease: t.BooleanType;
             };
         };
     };

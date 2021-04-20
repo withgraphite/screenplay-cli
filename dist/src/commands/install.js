@@ -18,38 +18,23 @@ const path_1 = __importDefault(require("path"));
 const utils_1 = require("../lib/utils");
 const screenplay_target_1 = require("../targets/screenplay_target");
 const test_target_1 = require("../targets/test_target");
-function install(argv, versionBundleOnlyArgs) {
+function install(argv) {
     return __awaiter(this, void 0, void 0, function* () {
         const xcodeProject = utils_1.readProject(argv["xcode-project"]);
         const xcodeFileName = path_1.default.basename(argv["xcode-project"]);
         const appTarget = utils_1.extractTarget(xcodeProject, argv["app-target"]);
-        if (versionBundleOnlyArgs) {
-            // Make sure to set synthetic versions on the version bundle source target (not the new one)
-            appTarget
-                .buildConfigurationList()
-                .buildConfigs()
-                .forEach((buildConfig) => {
-                buildConfig.buildSettings()["MARKETING_VERSION"] =
-                    versionBundleOnlyArgs["app-version"];
-            });
-        }
         const screenplayAppId = yield screenplay_target_1.addScreenplayAppTarget({
             xcodeProjectPath: argv["xcode-project"],
             xcodeProject: xcodeProject,
             appTarget: appTarget,
             newAppToken: argv["key"],
             appToken: argv["appToken"],
-            workspacePath: argv["workspace"],
-            withExtensions: argv["with-extensions"],
-            withFromApp: argv["with-from-app"],
             alwaysEnable: argv["always-enable"],
-            versionBundleDestination: versionBundleOnlyArgs && versionBundleOnlyArgs.destination,
         });
         if (argv["with-tests"]) {
             test_target_1.addTests({
                 xcodeFileName,
                 projectPath: argv["xcode-project"],
-                workspacePath: argv["workspace"],
                 xcodeProject,
                 appTarget,
             });

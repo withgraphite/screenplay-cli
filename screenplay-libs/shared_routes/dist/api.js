@@ -43,6 +43,7 @@ const API_ROUTES = base_1.asRouteTree({
         },
     },
     scripts: {
+        // TODO: To be deleted once all early clients reinstall
         buildPhaseDownloaderOld: {
             method: "GET",
             url: "/app-secret/:appSecret/build-phase-downloader",
@@ -87,24 +88,6 @@ const API_ROUTES = base_1.asRouteTree({
             },
             urlParams: {
                 versionId: t.string,
-            },
-        },
-        downloadLatest: {
-            method: "GET",
-            url: "/app/version-bundles",
-            headers: {
-                "X-SP-APP-SECRET": t.string,
-            },
-            queryParams: {
-                archs: t.string,
-                maxSemver: t.string,
-            },
-            response: {
-                versionBundles: t.array(t.shape({
-                    id: t.string,
-                    url: t.string,
-                    kind: t.literals(["app", "source"]),
-                })),
             },
         },
     },
@@ -159,23 +142,6 @@ const API_ROUTES = base_1.asRouteTree({
             },
             rawBody: true,
         },
-        createRelease: {
-            method: "POST",
-            url: "/app/releases",
-            headers: {
-                "X-SP-APP-SECRET": t.string,
-            },
-            params: {
-                versions: t.array(t.shape({
-                    embeddedId: t.number,
-                    id: t.string,
-                })),
-            },
-            response: {
-                id: t.string,
-                releaseSecret: t.string,
-            },
-        },
         createBuild: {
             method: "POST",
             url: "/app/builds",
@@ -190,24 +156,6 @@ const API_ROUTES = base_1.asRouteTree({
             },
             response: {
                 id: t.string,
-            },
-        },
-        buildMetadata: {
-            method: "POST",
-            url: "/app/build-metadata",
-            headers: {
-                "X-SP-APP-SECRET": t.string,
-            },
-            params: {
-                latestVersionSizeInKb: t.number,
-                totalBundleSizeInKb: t.number,
-                latestVersionTimeInS: t.number,
-                totalBundleTimeInS: t.number,
-                bundleId: t.string,
-                releaseId: t.string,
-                buildPhaseVersion: t.string,
-                archs: t.array(t.string),
-                isRelease: t.boolean,
             },
         },
     },

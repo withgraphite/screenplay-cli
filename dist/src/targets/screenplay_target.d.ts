@@ -5,7 +5,6 @@ export declare function addScreenplayAppTarget(opts: {
     xcodeProject: PBXProject;
     appTarget: PBXNativeTarget;
     workspacePath?: string;
-    versionBundleDestination?: string;
     withExtensions?: boolean;
     withFromApp?: boolean;
     alwaysEnable?: boolean;

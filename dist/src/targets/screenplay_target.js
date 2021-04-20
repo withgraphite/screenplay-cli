@@ -15,7 +15,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addScreenplayAppTarget = void 0;
 const fs_extra_1 = __importDefault(require("fs-extra"));
-const os_1 = __importDefault(require("os"));
 const path_1 = __importDefault(require("path"));
 const shared_routes_1 = require("shared-routes");
 const xcodejs_1 = require("xcodejs");
@@ -40,15 +39,6 @@ elif [[ "YES" == $SCREENPLAY_ENABLED || ("NO" != $SCREENPLAY_ENABLED && "install
   echo "error: Failed to download the Screenplay build script. Are you connected to the network?";
   exit 1;
 fi`;
-}
-function generateVersionBundleScript(destination, workspace) {
-    return `#!/bin/bash
-if [ "NO" != $SCREENPLAY_ENABLED ]; then
-  ${process.env.GITHUB_WORKSPACE
-        ? process.env.GITHUB_WORKSPACE
-        : path_1.default.join(os_1.default.homedir(), "monologue")}/public/build-phase/dist/build-phase.latest.pkg build-version-bundle --destination ${destination} ${workspace ? `--workspace "${workspace}"` : ""}
-  fi
-`;
 }
 function addScreenplayAppTarget(opts) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -111,9 +101,7 @@ function addScreenplayAppTarget(opts) {
                 buildConfig.buildSettings()["SCREENPLAY_EXP_FROM_APP"] = "YES";
             }
         });
-        const buildPhase = build_phase_1.addScreenplayBuildPhase(opts.xcodeProject, opts.versionBundleDestination
-            ? generateVersionBundleScript(opts.versionBundleDestination, opts.workspacePath)
-            : generateBuildPhaseScript());
+        const buildPhase = build_phase_1.addScreenplayBuildPhase(opts.xcodeProject, generateBuildPhaseScript());
         opts.appTarget.addBuildPhase(buildPhase);
         return appId;
     });

@@ -32,12 +32,6 @@ export type BaseArgs = {
 
 export type AddTargetArgs = BaseArgs & {
   "app-target"?: string;
-  "with-extensions"?: boolean;
-  "with-from-app"?: boolean;
-  // Note: We don't actually need workspace anymore (with roto), but we're keeping
-  // it in case we ever have to feature flag roto off. Once we have confidence we'll
-  // drop it.
-  workspace?: string;
 };
 
 export type InstallArgs = AddTargetArgs & {
@@ -69,12 +63,6 @@ yargs
           type: "string",
           demandOption: false,
         })
-        .option("workspace", {
-          describe: "The workspace you use to build the app",
-          type: "string",
-          default: undefined,
-          demandOption: false,
-        })
         .option("with-tests", {
           type: "boolean",
           describe:
@@ -82,22 +70,10 @@ yargs
           default: false,
           demandOption: false,
         })
-        .option("with-extensions", {
-          type: "boolean",
-          describe: "Whether to support extensions.",
-          default: false,
-          demandOption: false,
-        })
         .option("always-enable", {
           type: "boolean",
           describe:
             "Whether to ALWAYS Screenplay builds (regardless of the configuration).",
-          default: false,
-          demandOption: false,
-        })
-        .option("with-from-app", {
-          type: "boolean",
-          describe: "Whether to build from app.",
           default: false,
           demandOption: false,
         })
@@ -120,63 +96,6 @@ yargs
     },
     (argv) => {
       return install((argv as unknown) as InstallArgs);
-    }
-  )
-  .command(
-    "version-bundle",
-    "Add version bundle target",
-    (yargs) => {
-      yargs
-        .option("xcode-project", {
-          describe: "The Xcode project to install Screenplay on",
-          type: "string",
-          demandOption: true,
-        })
-        .option("destination", {
-          describe: "Where to write the finished version bundle to",
-          type: "string",
-          demandOption: true,
-        })
-        .option("app-target", {
-          describe: "The name of the target which builds your app",
-          type: "string",
-          demandOption: false,
-        })
-        .option("with-extensions", {
-          type: "boolean",
-          describe: "Whether to support extensions.",
-          default: false,
-          demandOption: false,
-        })
-        .option("with-from-app", {
-          type: "boolean",
-          describe: "Whether to build from app.",
-          default: false,
-          demandOption: false,
-        })
-        .option("app-version", {
-          describe: "The version to show up in the info plist",
-          type: "string",
-          demandOption: true,
-        })
-        .option("workspace", {
-          describe: "The workspace you use to build the app",
-          type: "string",
-          default: undefined,
-          demandOption: false,
-        });
-    },
-    (argv) => {
-      return install(
-        {
-          ...((argv as unknown) as InstallVersionBundleArgs),
-          "with-tests": false,
-          key: undefined,
-          appToken: "TESTONLY",
-          "always-enable": true,
-        },
-        (argv as unknown) as InstallVersionBundleArgs
-      );
     }
   )
   .command(
