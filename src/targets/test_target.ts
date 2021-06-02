@@ -9,6 +9,8 @@ import {
   XCSchemes,
 } from "xcodejs";
 
+// TODO: Fix this the next time the file is edited.
+// eslint-disable-next-line max-lines-per-function
 export function addTests(opts: {
   xcodeFileName: string;
   projectPath: string;
@@ -54,9 +56,8 @@ export function addTests(opts: {
     explicitFileType: "wrapper.cfbundle",
     sourceTree: "BUILT_PRODUCTS_DIR",
   };
-  const productRefGroupId = opts.xcodeProject.rootObject()._defn[
-    "productRefGroup"
-  ];
+  const productRefGroupId =
+    opts.xcodeProject.rootObject()._defn["productRefGroup"];
   opts.xcodeProject._defn["objects"][productRefGroupId]["children"].push(
     xcTestId
   );

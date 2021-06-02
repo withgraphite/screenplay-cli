@@ -1,5 +1,3 @@
-import chalk from "chalk";
-import { execSync } from "child_process";
 import * as fs from "fs-extra";
 import * as path from "path";
 
@@ -7,26 +5,11 @@ export default class BuildSettings {
   _defn: Record<string, string>;
 
   constructor(defn: Record<string, string>) {
-    if (!defn["TARGET_BUILD_DIR"]) {
-      throw new Error(
-        `Build settings missing value for TARGET_BUILD_DIR, xcodebuild call likely failed before completing`
-      );
-    }
     this._defn = defn;
   }
 
   public static loadFromFile(filePath: string): BuildSettings {
     return new BuildSettings(JSON.parse(fs.readFileSync(filePath).toString()));
-  }
-
-  public static loadFromProject(
-    project: string,
-    target: string,
-    options: {
-      // TODO: Handle things like SDK, Architecture, Etc.
-    }
-  ): BuildSettings {
-    return getBuildSettingsAndTargetNameFromTarget(project, target, options)[0];
   }
 
   public writeToFile(filePath: string) {
@@ -211,30 +194,4 @@ export default class BuildSettings {
   public get executableFolderPath(): string {
     return this.fetch("EXECUTABLE_FOLDER_PATH");
   }
-}
-
-export function getBuildSettingsAndTargetNameFromTarget(
-  project: string,
-  target: string,
-  options: {
-    // TODO: Handle things like SDK, Architecture, Etc.
-  }
-) {
-  const buildSettingsArray = JSON.parse(
-    execSync(
-      `xcodebuild -showBuildSettings -json -project "${project}" -target "${target}"`
-    )
-      .toString()
-      .trim()
-  );
-
-  if (buildSettingsArray.length !== 1) {
-    console.log(chalk.yellow("Warning! Target has more than one match"));
-    process.exit(1);
-  }
-
-  return [
-    new BuildSettings(buildSettingsArray[0]["buildSettings"]),
-    (buildSettingsArray[0]["target"] as string).replace(/(^")|("$)/g, ""),
-  ] as const;
 }

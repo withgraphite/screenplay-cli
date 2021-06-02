@@ -554,7 +554,10 @@ export default class PBXProj {
     return null;
   }
 
-  public extractAppName(buildSettings: BuildSettings): string | null {
+  public extractAppName(
+    buildSettings: BuildSettings,
+    forceExpandBuildSettings = false
+  ): string | null {
     // Get name from info plist
     const plist = Plist.fromFile(
       path.isAbsolute(buildSettings.fetch("INFOPLIST_FILE"))
@@ -567,7 +570,10 @@ export default class PBXProj {
     const expandBuildSettings = buildSettings.get(
       "INFOPLIST_EXPAND_BUILD_SETTINGS"
     );
-    if (expandBuildSettings && expandBuildSettings !== "NO") {
+    if (
+      (expandBuildSettings && expandBuildSettings !== "NO") ||
+      forceExpandBuildSettings
+    ) {
       name = buildSettings.expand(name);
     }
 
@@ -678,6 +684,8 @@ export default class PBXProj {
     return this.deepDuplicateInternal(id, {}, forceDuplicate);
   }
 
+  // TODO: Fix this the next time the file is edited.
+  // eslint-disable-next-line max-lines-per-function
   private deepDuplicateInternal(
     id: string,
     reboundKeys: Record<string, string>,

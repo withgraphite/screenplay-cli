@@ -32,14 +32,15 @@ export type BaseArgs = {
 
 export type AddTargetArgs = BaseArgs & {
   "app-target"?: string;
+  "accept-prompts-for-ci": boolean;
 };
 
 export type InstallArgs = AddTargetArgs & {
   "with-tests": boolean;
   "always-enable": boolean;
 } & (
-    | { key: string; appToken: undefined }
-    | { key: undefined; appToken: string }
+    | { "install-token": string; "app-secret": undefined }
+    | { "install-token": undefined; "app-secret": string }
   );
 
 export type InstallVersionBundleArgs = AddTargetArgs & {
@@ -77,25 +78,31 @@ yargs
           default: false,
           demandOption: false,
         })
-        .option("key", {
+        .option("install-token", {
           type: "string",
           describe:
-            "The secret key, specific to your organization, that allows you to create a new app.",
+            "The installation token, specific to your organization, that allows you to create a new app.",
         })
-        .option("appToken", {
+        .option("app-secret", {
           type: "string",
           describe:
-            "An app token that's already been issued for this app (typically only used when reinstalling Screenplay on an XCode project).",
+            "An app secret that's already been issued for this app (typically only used when reinstalling Screenplay on an XCode project).",
+        })
+        .option("accept-prompts-for-ci", {
+          type: "boolean",
+          alias: "y",
+          default: false,
+          describe: "Automatically accept any prompts",
         })
         .check((argv) => {
           return (
-            (argv["key"] || argv["appToken"]) &&
-            !(argv["key"] && argv["appToken"])
+            (argv["install-token"] || argv["app-secret"]) &&
+            !(argv["install-token"] && argv["app-secret"])
           );
         });
     },
     (argv) => {
-      return install((argv as unknown) as InstallArgs);
+      return install(argv as unknown as InstallArgs);
     }
   )
   .command(

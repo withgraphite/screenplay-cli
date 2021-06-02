@@ -13,8 +13,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.install = void 0;
-const chalk_1 = __importDefault(require("chalk"));
 const path_1 = __importDefault(require("path"));
+const splog_1 = require("splog");
 const utils_1 = require("../lib/utils");
 const screenplay_target_1 = require("../targets/screenplay_target");
 const test_target_1 = require("../targets/test_target");
@@ -23,14 +23,12 @@ function install(argv) {
         const xcodeProject = utils_1.readProject(argv["xcode-project"]);
         const xcodeFileName = path_1.default.basename(argv["xcode-project"]);
         const appTarget = utils_1.extractTarget(xcodeProject, argv["app-target"]);
-        const screenplayAppId = yield screenplay_target_1.addScreenplayAppTarget({
-            xcodeProjectPath: argv["xcode-project"],
-            xcodeProject: xcodeProject,
-            appTarget: appTarget,
-            newAppToken: argv["key"],
-            appToken: argv["appToken"],
-            alwaysEnable: argv["always-enable"],
-        });
+        const screenplayAppId = yield screenplay_target_1.addScreenplayAppTarget(Object.assign({ xcodeProjectPath: argv["xcode-project"], xcodeProject: xcodeProject, appTarget: appTarget, alwaysEnable: argv["always-enable"], acceptPrompts: argv["accept-prompts-for-ci"] }, (argv["install-token"]
+            ? { installToken: argv["install-token"], appSecret: undefined }
+            : {
+                appSecret: argv["app-secret"],
+                installToken: undefined,
+            })));
         if (argv["with-tests"]) {
             test_target_1.addTests({
                 xcodeFileName,
@@ -40,7 +38,7 @@ function install(argv) {
             });
         }
         xcodeProject.writeFileSync(path_1.default.join(argv["xcode-project"], "project.pbxproj"));
-        console.log(chalk_1.default.cyanBright("Screenplay successfully installed!"));
+        splog_1.logSuccess("Screenplay successfully installed!");
         if (screenplayAppId) {
             console.log(`Visit https://screenplay.dev/app/${screenplayAppId} to manage rollbacks`);
         }

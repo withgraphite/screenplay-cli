@@ -17,7 +17,9 @@ describe("uninstall_clears_install", function () {
         const xcodeprojDir = path_1.default.join(appDir.name, "blank-objc-storyboard.xcodeproj");
         const xcodeprojProjectDir = path_1.default.join(xcodeprojDir, "project.pbxproj");
         const preinstallProject = xcodejs_1.PBXProject.readFileSync(xcodeprojProjectDir);
-        child_process_1.execSync(`yarn cli install --appToken FAKE_TOKEN --xcode-project "${xcodeprojDir}"`, { stdio: "inherit" });
+        // Because the install script prompts the user to enter their app name, we need to
+        // pipe in a return to pass this.
+        child_process_1.execSync(`echo '\n' | yarn cli install --install-token FAKE_TOKEN --xcode-project "${xcodeprojDir}"`, { stdio: "inherit" });
         child_process_1.execSync(`yarn cli uninstall "${xcodeprojDir}"`, {
             stdio: "inherit",
         });

@@ -1,27 +1,18 @@
 import chalk from "chalk";
-import { getBuildSettingsAndTargetNameFromTarget } from "xcodejs";
-import { error, readProject } from "../lib/utils";
+import {
+  extractTarget,
+  getAppIcon,
+  inferProductName,
+  readProject,
+} from "../lib/utils";
 
 export function debugMetadata(xcodeProjectPath: string, appTargetName: string) {
   const xcodeProject = readProject(xcodeProjectPath);
+  const target = extractTarget(xcodeProject, appTargetName);
 
-  const [buildSetting] = getBuildSettingsAndTargetNameFromTarget(
-    xcodeProjectPath,
-    appTargetName,
-    {}
-  );
-
-  const realAppTarget = xcodeProject.getTargetWithName(appTargetName);
-  if (realAppTarget === null) {
-    error("Missing target: " + appTargetName);
-  }
-
-  const name = xcodeProject.extractAppName(buildSetting);
+  const name = inferProductName(xcodeProject, target);
   console.log(`${chalk.cyanBright("Name")}: ` + name);
 
-  const icon = xcodeProject.extractMarketingAppIcon(
-    buildSetting,
-    realAppTarget
-  );
+  const icon = getAppIcon(xcodeProject, target);
   console.log(`${chalk.cyanBright("Icon")}: ` + icon);
 }

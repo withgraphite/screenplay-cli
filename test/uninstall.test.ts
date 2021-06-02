@@ -21,8 +21,10 @@ describe("uninstall_clears_install", function () {
 
     const preinstallProject = PBXProject.readFileSync(xcodeprojProjectDir);
 
+    // Because the install script prompts the user to enter their app name, we need to
+    // pipe in a return to pass this.
     execSync(
-      `yarn cli install --appToken FAKE_TOKEN --xcode-project "${xcodeprojDir}"`,
+      `echo '\n' | yarn cli install --install-token FAKE_TOKEN --xcode-project "${xcodeprojDir}"`,
       { stdio: "inherit" }
     );
     execSync(`yarn cli uninstall "${xcodeprojDir}"`, {

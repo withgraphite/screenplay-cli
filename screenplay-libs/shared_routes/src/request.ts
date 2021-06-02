@@ -61,7 +61,7 @@ function request(
   });
 }
 
-export function requestWithArgs<TActualRoute extends TRoute>(
+export function formatReqDetails<TActualRoute extends TRoute>(
   apiServer: string,
   route: TActualRoute,
   params: TActualRoute["rawBody"] extends true
@@ -70,9 +70,12 @@ export function requestWithArgs<TActualRoute extends TRoute>(
   queryParams?: t.UnwrapSchemaMap<TActualRoute["queryParams"]>,
   urlParams?: t.UnwrapSchemaMap<TActualRoute["urlParams"]>,
   headers?: t.UnwrapSchemaMap<TActualRoute["headers"]>
-): Promise<
-  t.UnwrapSchemaMap<TActualRoute["response"]> & { _response: Response }
-> {
+): {
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  body: any;
+} {
   // Inspired by https://github.com/ReactTraining/react-router/blob/ea44618e68f6a112e48404b2ea0da3e207daf4f0/packages/react-router/modules/generatePath.js
   const path = urlParams
     ? pathToRegexp.compile(route.url)(urlParams)
@@ -91,14 +94,42 @@ export function requestWithArgs<TActualRoute extends TRoute>(
     body = route.rawBody ? (params as Buffer) : JSON.stringify(params);
   }
 
-  return request(
+  return {
     url,
-    route.method,
-    {
+    method: route.method,
+    headers: {
       ...headers,
       "Content-Type": "text/plain",
     } as Record<string, string>,
-    body
+    body,
+  };
+}
+
+export function requestWithArgs<TActualRoute extends TRoute>(
+  apiServer: string,
+  route: TActualRoute,
+  params: TActualRoute["rawBody"] extends true
+    ? Buffer
+    : t.UnwrapSchemaMap<TActualRoute["params"]>,
+  queryParams?: t.UnwrapSchemaMap<TActualRoute["queryParams"]>,
+  urlParams?: t.UnwrapSchemaMap<TActualRoute["urlParams"]>,
+  headers?: t.UnwrapSchemaMap<TActualRoute["headers"]>
+): Promise<
+  t.UnwrapSchemaMap<TActualRoute["response"]> & { _response: Response }
+> {
+  const reqDetails = formatReqDetails(
+    apiServer,
+    route,
+    params,
+    queryParams,
+    urlParams,
+    headers
+  );
+  return request(
+    reqDetails.url,
+    reqDetails.method,
+    reqDetails.headers,
+    reqDetails.body
   ).then((response) => {
     // if there is supposed to be a response type, parse it
     if (!!route.response && response.status === 200) {

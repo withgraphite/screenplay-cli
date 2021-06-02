@@ -23,6 +23,7 @@ var api_1 = require("./api");
 Object.defineProperty(exports, "api", { enumerable: true, get: function () { return api_1.default; } });
 var assets_1 = require("./assets");
 Object.defineProperty(exports, "assets", { enumerable: true, get: function () { return assets_1.default; } });
+exports.cereal = __importStar(require("./cereal"));
 var ff_1 = require("./ff");
 Object.defineProperty(exports, "ff", { enumerable: true, get: function () { return ff_1.default; } });
 var oauth_1 = require("./oauth");

@@ -17,9 +17,17 @@
     "baseUrl": ".",
     "declaration": true
   },
-  "lib": ["es2015"],
+  "lib": [
+    "es2015"
+  ],
   "editor.codeActionsOnSave": {
     "source.fixAll.tslint": true
   },
-  "include": ["src", "test"]
+  "include": [
+    "src",
+    "test"
+  ],
+  "exclude": [
+    "test/resources"
+  ],
 }

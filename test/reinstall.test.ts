@@ -18,15 +18,17 @@ describe("reinstall", function () {
     );
     const xcodeprojProjectDir = path.join(xcodeprojDir, "project.pbxproj");
 
+    // Because the install script prompts the user to enter their app name, we need to
+    // pipe in a return to pass this.
     execSync(
-      `yarn cli install --appToken FAKE_TOKEN --xcode-project "${xcodeprojDir}"`,
+      `echo '\n' | yarn cli install --app-secret FAKE_TOKEN --xcode-project "${xcodeprojDir}"`,
       { stdio: "inherit" }
     );
 
     const installedProject = PBXProject.readFileSync(xcodeprojProjectDir);
 
     execSync(
-      `yarn cli reinstall "${xcodeprojDir}" --app-target blank-objc-storyboard`,
+      `echo '\n' | yarn cli reinstall "${xcodeprojDir}" --app-target blank-objc-storyboard`,
       {
         stdio: "inherit",
       }

@@ -139,9 +139,10 @@ function removeAllTests(opts) {
     // If there is only one value (i.e. it's not an array), we can assume we
     // need to build that one
     if (Array.isArray(defn["Scheme"]["BuildAction"]["BuildActionEntries"]["BuildActionEntry"])) {
-        defn["Scheme"]["BuildAction"]["BuildActionEntries"]["BuildActionEntry"] = defn["Scheme"]["BuildAction"]["BuildActionEntries"]["BuildActionEntry"].filter((entry) => {
-            return !entry["BuildableReference"]["_attributes"]["BuildableName"].endsWith("xctest");
-        });
+        defn["Scheme"]["BuildAction"]["BuildActionEntries"]["BuildActionEntry"] =
+            defn["Scheme"]["BuildAction"]["BuildActionEntries"]["BuildActionEntry"].filter((entry) => {
+                return !entry["BuildableReference"]["_attributes"]["BuildableName"].endsWith("xctest");
+            });
     }
     defn["Scheme"]["TestAction"]["Testables"]["TestableReference"] = [];
     fs_extra_1.default.writeFileSync(appSchemePath, xml_js_1.default.js2xml(defn, { compact: true }));

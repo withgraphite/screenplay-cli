@@ -2,7 +2,6 @@ export default class BuildSettings {
     _defn: Record<string, string>;
     constructor(defn: Record<string, string>);
     static loadFromFile(filePath: string): BuildSettings;
-    static loadFromProject(project: string, target: string, options: {}): BuildSettings;
     writeToFile(filePath: string): void;
     get(key: string): string | undefined;
     private applyOperation;
@@ -40,4 +39,3 @@ export default class BuildSettings {
     get fatFrameworkDirPath(): string;
     get executableFolderPath(): string;
 }
-export declare function getBuildSettingsAndTargetNameFromTarget(project: string, target: string, options: {}): readonly [BuildSettings, string];

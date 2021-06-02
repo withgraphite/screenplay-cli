@@ -57,17 +57,23 @@ yargs_1.default
         default: false,
         demandOption: false,
     })
-        .option("key", {
+        .option("install-token", {
         type: "string",
-        describe: "The secret key, specific to your organization, that allows you to create a new app.",
+        describe: "The installation token, specific to your organization, that allows you to create a new app.",
     })
-        .option("appToken", {
+        .option("app-secret", {
         type: "string",
-        describe: "An app token that's already been issued for this app (typically only used when reinstalling Screenplay on an XCode project).",
+        describe: "An app secret that's already been issued for this app (typically only used when reinstalling Screenplay on an XCode project).",
+    })
+        .option("accept-prompts-for-ci", {
+        type: "boolean",
+        alias: "y",
+        default: false,
+        describe: "Automatically accept any prompts",
     })
         .check((argv) => {
-        return ((argv["key"] || argv["appToken"]) &&
-            !(argv["key"] && argv["appToken"]));
+        return ((argv["install-token"] || argv["app-secret"]) &&
+            !(argv["install-token"] && argv["app-secret"]));
     });
 }, (argv) => {
     return install_1.install(argv);

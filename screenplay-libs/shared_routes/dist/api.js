@@ -24,6 +24,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const t = __importStar(require("retype"));
 const base_1 = require("./base");
+const cereal_1 = require("./cereal");
 const ff_1 = __importDefault(require("./ff"));
 const API_ROUTES = base_1.asRouteTree({
     featureFlags: {
@@ -56,6 +57,17 @@ const API_ROUTES = base_1.asRouteTree({
             url: "/build-phase-downloader",
             headers: {
                 "X-SP-APP-SECRET": t.string,
+            },
+        },
+    },
+    buildAuthor: {
+        bind: {
+            method: "POST",
+            url: "/build-author/link",
+            queryParams: {},
+            params: {
+                authorId: t.string,
+                releaseId: t.string,
             },
         },
     },
@@ -120,6 +132,18 @@ const API_ROUTES = base_1.asRouteTree({
                 newAppToken: t.string,
             },
         },
+        getSecret: {
+            method: "GET",
+            url: "/app/secret",
+            urlParams: {},
+            queryParams: {
+                newAppToken: t.string,
+                bundleIdentifier: t.string,
+            },
+            response: {
+                appSecret: t.optional(t.string),
+            },
+        },
         create: {
             method: "POST",
             url: "/new-app/:newAppToken",
@@ -127,6 +151,7 @@ const API_ROUTES = base_1.asRouteTree({
                 newAppToken: t.string,
             },
             params: {
+                bundleIdentifier: t.optional(t.string),
                 name: t.string,
             },
             response: {
@@ -153,6 +178,12 @@ const API_ROUTES = base_1.asRouteTree({
                 includeDefaultVersions: t.boolean,
                 maxSemverForDefaultVersions: t.string,
                 archs: t.array(t.string),
+                withFallbackVersion: t.optional(t.string),
+                plistOverrides: t.optional(t.array(t.string)),
+                buildAuthor: t.optional(t.string),
+                buildAction: t.optional(t.string),
+                buildConfiguration: t.optional(t.string),
+                clobberPaths: t.optional(t.array(t.string)),
             },
             response: {
                 id: t.string,
@@ -177,6 +208,8 @@ const API_ROUTES = base_1.asRouteTree({
                     "FAILURE",
                 ]),
                 downloadURL: t.optional(t.string),
+                appId: t.optional(t.string),
+                releaseId: t.optional(t.string),
             },
         },
     },
@@ -198,11 +231,34 @@ const API_ROUTES = base_1.asRouteTree({
                 name: t.string,
                 created: t.number,
                 userCount: t.number,
+                size: t.nullable(t.number),
+                status: t.literals([
+                    "IN_APP_STORE",
+                    "NOT_RELEASED",
+                    "RELEASE_CANDIDATE",
+                ]),
+                newerVersionInAppStore: t.boolean,
+                releasedDate: t.nullable(t.number),
+                buildReport: t.nullable(t.shape({
+                    buildRequest: t.shape({
+                        buildConfiguration: t.string,
+                        buildAction: t.string,
+                        author: t.nullable(t.shape({
+                            firstName: t.string,
+                            lastName: t.string,
+                            profilePicture: t.nullable(t.string),
+                            email: t.string,
+                        })),
+                    }),
+                    didFallback: t.boolean,
+                    fallbackReason: t.optional(t.string),
+                })),
                 timeline: t.array(t.shape({
                     actor: t.nullable(t.shape({
                         firstName: t.string,
                         lastName: t.string,
                         profilePicture: t.nullable(t.string),
+                        email: t.string,
                     })),
                     date: t.number,
                     event: t.shape({
@@ -216,6 +272,10 @@ const API_ROUTES = base_1.asRouteTree({
                     id: t.string,
                     name: t.string,
                     color: t.string,
+                    size: t.nullable(t.number),
+                    fileSizeTreeURL: t.nullable(t.string),
+                    receivingTraffic: t.boolean,
+                    default: t.boolean,
                 })),
             },
         },
@@ -322,6 +382,7 @@ const API_ROUTES = base_1.asRouteTree({
                 store: t.literal("IOS"),
                 totalUsers: t.number,
                 totalReleases: t.number,
+                totalBuilds: t.number,
                 mostRecentReleases: t.array(t.shape({
                     id: t.string,
                     name: t.string,
@@ -329,9 +390,9 @@ const API_ROUTES = base_1.asRouteTree({
                 })),
             },
         },
-        releases: {
+        buildsAfterLatestRelease: {
             method: "GET",
-            url: "/app/:appId/releases",
+            url: "/app/:appId/new-releases",
             urlParams: {
                 appId: t.string,
             },
@@ -339,17 +400,68 @@ const API_ROUTES = base_1.asRouteTree({
                 beforeDate: t.optional(t.string),
             },
             response: {
+                releases: t.array(cereal_1.release),
+            },
+        },
+        buildsBeforeLatestRelease: {
+            method: "GET",
+            url: "/app/:appId/previous-releases",
+            urlParams: {
+                appId: t.string,
+            },
+            queryParams: {
+                beforeDate: t.optional(t.string),
+                beforeMajorVersion: t.optional(t.string),
+                beforeMinorVersion: t.optional(t.string),
+                beforePatchVersion: t.optional(t.string),
+            },
+            response: {
+                releases: t.array(cereal_1.release),
+            },
+        },
+        releasesInAppStore: {
+            method: "GET",
+            url: "/app/:appId/app-store-releases",
+            urlParams: {
+                appId: t.string,
+            },
+            queryParams: {
+                beforeMajorVersion: t.optional(t.string),
+                beforeMinorVersion: t.optional(t.string),
+                beforePatchVersion: t.optional(t.string),
+            },
+            response: {
+                releases: t.array(cereal_1.release),
+            },
+        },
+        releasesForSemver: {
+            method: "GET",
+            url: "/app/:appId/semver/:semver",
+            urlParams: {
+                appId: t.string,
+                semver: t.string,
+            },
+            response: {
                 releases: t.array(t.shape({
                     id: t.string,
                     name: t.string,
                     createdAt: t.number,
                     users: t.number,
-                    builtForRelease: t.boolean,
-                    versions: t.array(t.shape({
-                        name: t.string,
-                        receivingTraffic: t.boolean,
-                    })),
+                    released: t.boolean,
                 })),
+                releaseDate: t.nullable(t.number),
+            },
+        },
+        updateReleaseForSemver: {
+            method: "PUT",
+            url: "/app/:appId/semver/:semver",
+            urlParams: {
+                appId: t.string,
+                semver: t.string,
+            },
+            params: {
+                id: t.nullable(t.string),
+                releaseDate: t.nullable(t.number),
             },
         },
     },
@@ -461,6 +573,13 @@ const API_ROUTES = base_1.asRouteTree({
         },
     },
     blogs: {
+        latestPost: {
+            method: "GET",
+            url: "/blog/lastest-post",
+            response: {
+                id: t.string,
+            },
+        },
         page: {
             method: "GET",
             url: "/blog/post/:id",
@@ -473,6 +592,13 @@ const API_ROUTES = base_1.asRouteTree({
                 published: t.boolean,
                 createdAt: t.number,
                 wordCount: t.number,
+                publishedAt: t.nullable(t.number),
+                author: t.nullable(t.shape({
+                    firstName: t.string,
+                    lastName: t.string,
+                    profilePicture: t.nullable(t.string),
+                    email: t.nullable(t.string),
+                })),
             },
         },
         pages: {
@@ -505,6 +631,8 @@ const API_ROUTES = base_1.asRouteTree({
                 title: t.string,
                 text: t.string,
                 published: t.boolean,
+                publishedAt: t.nullable(t.number),
+                authorEmail: t.nullable(t.string),
             },
         },
         deletePage: {
@@ -525,6 +653,7 @@ const API_ROUTES = base_1.asRouteTree({
                 lastName: t.string,
                 profilePicture: t.optional(t.string),
                 email: t.string,
+                domain: t.nullable(t.string),
             }),
             teams: t.array(t.shape({
                 id: t.string,
@@ -562,7 +691,7 @@ const API_ROUTES = base_1.asRouteTree({
             method: "POST",
             url: "/intercut/flags",
             headers: {
-                "X-SP-APP-SECRET": t.string,
+                "X-SP-RELEASE-SECRET": t.string,
             },
             params: {
                 persistId: t.string,
@@ -635,6 +764,17 @@ const API_ROUTES = base_1.asRouteTree({
             method: "POST",
             url: "/user/me/acknowledge-orgs",
         },
+        createOrg: {
+            method: "POST",
+            url: "/orgs",
+            params: {
+                name: t.string,
+                withDomain: t.boolean,
+            },
+            response: {
+                orgId: t.string,
+            },
+        },
         completeOnboarding: {
             method: "POST",
             url: "/user/me/complete-onboarding",
@@ -667,6 +807,7 @@ const API_ROUTES = base_1.asRouteTree({
                     lastName: t.string,
                     admin: t.boolean,
                     profilePicture: t.optional(t.string),
+                    email: t.string,
                 })),
                 invites: t.array(t.shape({
                     id: t.string,
@@ -763,6 +904,15 @@ const API_ROUTES = base_1.asRouteTree({
             },
             params: {
                 emails: t.array(t.string),
+            },
+        },
+    },
+    employeesOnly: {
+        growthDash: {
+            method: "GET",
+            url: "/employees-only/growth-dash",
+            response: {
+                values: t.array(t.array(t.string)),
             },
         },
     },

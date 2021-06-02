@@ -3,11 +3,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Plist = void 0;
+exports.Plist = exports.PlistMergeStrategies = exports.IncompatiblePlistError = void 0;
 const chalk_1 = __importDefault(require("chalk"));
 const child_process_1 = require("child_process");
 const fs_extra_1 = __importDefault(require("fs-extra"));
+const semver_compare_1 = __importDefault(require("semver-compare"));
 const tmp_1 = __importDefault(require("tmp"));
+class IncompatiblePlistError extends Error {
+}
+exports.IncompatiblePlistError = IncompatiblePlistError;
+exports.PlistMergeStrategies = [
+    "TakeLatestBundleValue",
+    "TakeGreatestSemverValue",
+];
 // Note: DO NOT ASSUME this is an info.plist (it could also be entitlements)
 // If you need to add info.plist specific methods here, please subclass this
 class Plist {
@@ -62,10 +70,8 @@ class Plist {
         return new Plist(Plist._renderWithValues(this._defn, values));
     }
     static mergeKeyFromOthers(key, values, overrideList) {
-        // If override value, take the newest value.
-        if (overrideList.includes(key)) {
-            const newestVal = values[0]; // Risky ordering assumption
-            return newestVal;
+        if (key in overrideList) {
+            return Plist.mergeOverrideKey(overrideList[key], values);
         }
         // No specific handler found, assuming they must all be identical
         const firstValue = values[0];
@@ -85,9 +91,23 @@ class Plist {
                     .join(", ") +
                 `), this key cannot be different. Consider accepting the newer value by adding ${key} to the "SCREENPLAY_PLIST_CONFLICT_ALLOWLIST" build settings.`;
             console.error(chalk_1.default.red(errorMessage));
-            throw new Error(errorMessage);
+            throw new IncompatiblePlistError(errorMessage);
         }
         return firstValue;
+    }
+    static mergeOverrideKey(mergeStrategy, values) {
+        switch (mergeStrategy) {
+            case "TakeLatestBundleValue": {
+                const newestVal = values[0]; // Risky ordering assumption
+                return newestVal;
+            }
+            case "TakeGreatestSemverValue":
+                return values.sort(semver_compare_1.default).reverse()[0];
+            default:
+                (function (_) {
+                    throw Error("Unknown plist merge strategy");
+                })(mergeStrategy);
+        }
     }
     static fromOthers(plists, overrideList) {
         const allKeys = new Set();
@@ -114,7 +134,7 @@ class Plist {
          */
         const tempFile = tmp_1.default.fileSync();
         fs_extra_1.default.writeFileSync(tempFile.name, JSON.stringify(this._defn));
-        child_process_1.execSync(`plutil -convert xml1 "${tempFile.name}" -o "${file}"`);
+        child_process_1.execSync(`chmod +w "${file}" && plutil -convert xml1 "${tempFile.name}" -o "${file}"`);
         tempFile.removeCallback();
     }
 }

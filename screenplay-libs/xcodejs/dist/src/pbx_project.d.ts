@@ -35,7 +35,7 @@ export default class PBXProj {
     mergeTargets(other: PBXProj, newMainGroup: PBXGroup, filePathPrefix: string): PBXNativeTarget[];
     convertAppToFramework(target: PBXNativeTarget, filePathPrefix: string, frameworkStepId: string): TMergedAppDetails;
     extractMarketingAppIcon(buildSettings: BuildSettings, target: PBXNativeTarget): string | null;
-    extractAppName(buildSettings: BuildSettings): string | null;
+    extractAppName(buildSettings: BuildSettings, forceExpandBuildSettings?: boolean): string | null;
     duplicateBuildConfig(buildConfig: PBXBuildConfig, project: PBXProj): PBXBuildConfig;
     duplicateBuildConfigList(buildConfigList: PBXBuildConfigList, project: PBXProj): PBXBuildConfigList;
     getTargetWithName(name: string, mustBeAppTarget?: boolean): PBXNativeTarget | null;

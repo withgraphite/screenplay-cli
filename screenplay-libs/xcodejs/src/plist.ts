@@ -1,8 +1,21 @@
 import chalk from "chalk";
 import { execSync } from "child_process";
 import fs from "fs-extra";
+import semverCompare from "semver-compare";
 import tmp from "tmp";
 import BuildSettings from "./build_settings";
+
+export class IncompatiblePlistError extends Error {}
+
+export const PlistMergeStrategies = [
+  "TakeLatestBundleValue",
+  "TakeGreatestSemverValue",
+] as const;
+export type PlistMergeStrategy = typeof PlistMergeStrategies[number];
+
+export interface PlistOverrides {
+  [key: string]: PlistMergeStrategy;
+}
 
 type TPlist = string | TPlist[] | { [key: string]: TPlist };
 
@@ -77,13 +90,12 @@ export class Plist {
   static mergeKeyFromOthers(
     key: string,
     values: any[],
-    overrideList: string[]
+    overrideList: PlistOverrides
   ) {
-    // If override value, take the newest value.
-    if (overrideList.includes(key)) {
-      const newestVal = values[0]; // Risky ordering assumption
-      return newestVal;
+    if (key in overrideList) {
+      return Plist.mergeOverrideKey(overrideList[key], values);
     }
+
     // No specific handler found, assuming they must all be identical
     const firstValue = values[0];
     const firstValueJSON = JSON.stringify(
@@ -110,12 +122,27 @@ export class Plist {
           .join(", ") +
         `), this key cannot be different. Consider accepting the newer value by adding ${key} to the "SCREENPLAY_PLIST_CONFLICT_ALLOWLIST" build settings.`;
       console.error(chalk.red(errorMessage));
-      throw new Error(errorMessage);
+      throw new IncompatiblePlistError(errorMessage);
     }
     return firstValue;
   }
 
-  static fromOthers(plists: Plist[], overrideList: string[]) {
+  static mergeOverrideKey(mergeStrategy: PlistMergeStrategy, values: any[]) {
+    switch (mergeStrategy) {
+      case "TakeLatestBundleValue": {
+        const newestVal = values[0]; // Risky ordering assumption
+        return newestVal;
+      }
+      case "TakeGreatestSemverValue":
+        return values.sort(semverCompare).reverse()[0];
+      default:
+        (function (_: never) {
+          throw Error("Unknown plist merge strategy");
+        })(mergeStrategy);
+    }
+  }
+
+  static fromOthers(plists: Plist[], overrideList: PlistOverrides) {
     const allKeys = new Set<string>();
     plists.forEach((plist) => {
       Object.keys(plist._defn).forEach((k) => {
@@ -147,7 +174,9 @@ export class Plist {
      */
     const tempFile = tmp.fileSync();
     fs.writeFileSync(tempFile.name, JSON.stringify(this._defn));
-    execSync(`plutil -convert xml1 "${tempFile.name}" -o "${file}"`);
+    execSync(
+      `chmod +w "${file}" && plutil -convert xml1 "${tempFile.name}" -o "${file}"`
+    );
     tempFile.removeCallback();
   }
 }

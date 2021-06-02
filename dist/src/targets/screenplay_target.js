@@ -16,8 +16,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.addScreenplayAppTarget = void 0;
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
+const prompts_1 = __importDefault(require("prompts"));
 const shared_routes_1 = require("shared-routes");
-const xcodejs_1 = require("xcodejs");
+const splog_1 = require("splog");
 const api_1 = require("../lib/api");
 const utils_1 = require("../lib/utils");
 const build_phase_1 = require("../phases/build_phase");
@@ -26,6 +27,7 @@ function generateBuildPhaseScript() {
         ? shared_routes_1.localhostApiServerWithPort(`\${NODE_PORT:-8000}`)
         : shared_routes_1.PROD_API_SERVER, shared_routes_1.api.scripts.buildPhaseDownloader, {}, {})}`;
     return `#!/bin/bash
+# Learn more at "https://screenplay.dev/"
 if curl -o /dev/null -H "X-SP-APP-SECRET: $SCREENPLAY_APP_KEY" -sfI "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}"; then
   curl -s -H "X-SP-APP-SECRET: $SCREENPLAY_APP_KEY" "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}" | bash -s -- 1>&2;
   if [ 0 != $? ]; then
@@ -40,40 +42,135 @@ elif [[ "YES" == $SCREENPLAY_ENABLED || ("NO" != $SCREENPLAY_ENABLED && "install
   exit 1;
 fi`;
 }
-function addScreenplayAppTarget(opts) {
+function getBundleIdentifier(appTarget, acceptPrompts) {
     return __awaiter(this, void 0, void 0, function* () {
-        // Swap new app token for app secret
-        const [buildSetting, returnedAppTarget,] = xcodejs_1.getBuildSettingsAndTargetNameFromTarget(opts.xcodeProjectPath, opts.appTarget.name(), {});
-        if (opts.appTarget.name() !== returnedAppTarget ||
-            opts.xcodeProject
-                .rootObject()
-                .targets()
-                .filter((target) => {
-                return target.name() === returnedAppTarget;
-            }).length > 1) {
-            utils_1.error("Error! Many targets with the same name detected");
-        }
-        const name = opts.xcodeProject.extractAppName(buildSetting);
-        if (name === null) {
-            utils_1.error("Error! Could not infer name");
-        }
-        let appSecret = opts.appToken;
-        let appId = null;
-        if (opts.newAppToken) {
-            const appSecretRequest = yield api_1.requestWithArgs(shared_routes_1.api.apps.create, {
-                name: name,
-            }, {}, {
-                newAppToken: opts.newAppToken,
+        const bundleIdentifiers = [
+            ...new Set(// for uniquing
+            appTarget
+                .buildConfigurationList()
+                .buildConfigs()
+                .map((config) => config.buildSettings()["PRODUCT_BUNDLE_IDENTIFIER"])),
+        ];
+        return bundleIdentifiers.length == 1 || acceptPrompts
+            ? bundleIdentifiers[0]
+            : yield prompts_1.default({
+                type: "select",
+                name: "value",
+                choices: bundleIdentifiers,
+                message: `Multiple bundle identifiers found for target "${appTarget.name()}"`,
+                initial: 1,
             });
-            appSecret = appSecretRequest.appSecret;
-            appId = appSecretRequest.id;
-            const icon = opts.xcodeProject.extractMarketingAppIcon(buildSetting, opts.appTarget);
-            if (icon) {
-                yield api_1.requestWithArgs(shared_routes_1.api.apps.updateAppIcon, fs_extra_1.default.readFileSync(icon), {}, {}, {
-                    "X-SP-APP-SECRET": appSecretRequest.appSecret,
-                });
+    });
+}
+function checkForExistingAppSecret(installToken, bundleIdentifier, acceptPrompts) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Check to see if the app is already registered:
+        const existingAppSecret = yield api_1.requestWithArgs(shared_routes_1.api.apps.getSecret, {}, {
+            newAppToken: installToken,
+            bundleIdentifier: bundleIdentifier,
+        });
+        if (existingAppSecret.appSecret) {
+            console.log(`Screenplay app already already in your org for bundle identifier "${bundleIdentifier}".`);
+            const reinstall = acceptPrompts
+                ? true
+                : (yield prompts_1.default({
+                    type: "confirm",
+                    name: "value",
+                    message: `Would you like to install using the existing app secret? (Recommended)`,
+                    initial: true,
+                })).value;
+            if (reinstall) {
+                return existingAppSecret.appSecret;
+            }
+            else {
+                splog_1.logError(`Screenplay cannot register a new app with an existing bundle identifier. Please update your target's bundle identifier and retry installing.`);
+                process.exit(1);
             }
         }
+        return undefined;
+    });
+}
+function requestNewAppSecret(opts) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const appSecretRequest = yield api_1.requestWithArgs(shared_routes_1.api.apps.create, {
+            name: opts.name,
+            bundleIdentifier: opts.bundleIdentifier,
+        }, {}, {
+            newAppToken: opts.installToken,
+        });
+        const appSecret = appSecretRequest.appSecret;
+        const appId = appSecretRequest.id;
+        if (opts.icon) {
+            yield api_1.requestWithArgs(shared_routes_1.api.apps.updateAppIcon, fs_extra_1.default.readFileSync(opts.icon), {}, {}, {
+                "X-SP-APP-SECRET": appSecretRequest.appSecret,
+            });
+        }
+        return { appSecret, appId };
+    });
+}
+function getAppName(xcodeProject, target, acceptPrompts) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const prompt = {
+            type: "text",
+            name: "appName",
+            message: "What is the name of your app?",
+        };
+        const inferredName = getInferredAppName(xcodeProject, target);
+        if (acceptPrompts) {
+            return inferredName;
+        }
+        if (inferredName !== null) {
+            prompt.initial = inferredName;
+        }
+        const inputAppName = (yield prompts_1.default(prompt)).appName;
+        if (isValidAppName(inputAppName)) {
+            return inputAppName.trim();
+        }
+        return null;
+    });
+}
+function getInferredAppName(xcodeProject, target) {
+    const inferredName = utils_1.inferProductName(xcodeProject, target);
+    if (inferredName === null || !isValidAppName(inferredName)) {
+        return null;
+    }
+    return inferredName;
+}
+function isValidAppName(name) {
+    return name !== null && name !== undefined && name.trim().length > 0;
+}
+function addScreenplayAppTarget(opts) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const xcodeProject = utils_1.readProject(opts.xcodeProjectPath);
+        const name = yield getAppName(xcodeProject, opts.appTarget, opts.acceptPrompts);
+        if (name === null) {
+            splog_1.logError("Please specify an app name!");
+            process.exit(1);
+        }
+        let appId = null;
+        const icon = utils_1.getAppIcon(xcodeProject, opts.appTarget);
+        const bundleIdentifier = yield getBundleIdentifier(opts.appTarget, opts.acceptPrompts);
+        // Allow for reassignment later
+        let appSecret = opts.appSecret;
+        // Consider the chance that this project already has this app registered.
+        if (opts.installToken) {
+            const existingAppSecret = yield checkForExistingAppSecret(opts.installToken, bundleIdentifier, opts.acceptPrompts);
+            if (existingAppSecret) {
+                appSecret = existingAppSecret;
+            }
+        }
+        // Otherwise, create a new app
+        if (!appSecret && opts.installToken) {
+            const newAppDetails = yield requestNewAppSecret({
+                icon: icon || undefined,
+                name,
+                bundleIdentifier,
+                installToken: opts.installToken,
+            });
+            appId = newAppDetails.appId;
+            appSecret = newAppDetails.appSecret;
+        }
+        // Install the details
         opts.appTarget
             .buildConfigurationList()
             .buildConfigs()

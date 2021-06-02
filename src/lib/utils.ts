@@ -1,20 +1,12 @@
-import chalk from "chalk";
 import fs from "fs-extra";
 import path from "path";
-import { PBXNativeTarget, PBXProject } from "xcodejs";
-
-export function error(msg: string): never {
-  console.log(chalk.yellow(`ERROR: ${msg}`));
-  process.exit(1);
-}
-
-export function warn(msg: string) {
-  console.log(chalk.yellow(`WARNING: ${msg}`));
-}
+import { logError } from "splog";
+import { BuildSettings, PBXNativeTarget, PBXProject } from "xcodejs";
 
 export function readProject(projectPath: string): PBXProject {
   if (!fs.existsSync(projectPath)) {
-    error(`Could not find Xcode project ("${projectPath}").`);
+    logError(`Could not find Xcode project ("${projectPath}").`);
+    process.exit(1);
   }
   return PBXProject.readFileSync(path.join(projectPath, "project.pbxproj"));
 }
@@ -31,7 +23,8 @@ export function extractTarget(
     );
   }
   if (targets.length === 0) {
-    error("No app targets detected in the Xcode project.");
+    logError("No app targets detected in the Xcode project.");
+    process.exit(1);
   } else if (targets.length === 1) {
     return targets[0];
   } else {
@@ -45,12 +38,58 @@ export function extractTarget(
       }
     }
 
-    error(
+    logError(
       `More than one app target detected, please specify one with the --app-target flag. (Potential app targets: ${targets.map(
         (t) => {
           return `"${t.name()}"`;
         }
       )})`
     );
+    process.exit(1);
   }
+}
+
+/**
+ * Given a native target, this method makes our best guess at the target's
+ * product name. This inferred name may not be correct 100% of the time and
+ * should be verified, if possible.
+ */
+export function inferProductName(
+  xcodeProject: PBXProject,
+  target: PBXNativeTarget
+) {
+  const appName = xcodeProject.extractAppName(
+    getTargetSpecifiedBuildSettings(target),
+    true // force extraction to expand build settings in info.plist
+  );
+
+  if (appName === "$(TARGET_NAME)") {
+    return target.name();
+  }
+
+  return appName;
+}
+
+export function getAppIcon(xcodeProject: PBXProject, target: PBXNativeTarget) {
+  return xcodeProject.extractMarketingAppIcon(
+    getTargetSpecifiedBuildSettings(target),
+    target
+  );
+}
+
+/**
+ * These are ONLY the user-specified build settings on the target. Notably,
+ * these settings do not include any settings set via:
+ *
+ *  - iOS defaults
+ *  - .xcconfig files
+ *  - the Xcode project
+ *
+ * We can improve this method in the future by making it incorporate the
+ * sources above.
+ */
+function getTargetSpecifiedBuildSettings(target: PBXNativeTarget) {
+  return new BuildSettings(
+    target.buildConfigurationList().defaultConfig().buildSettings()
+  );
 }

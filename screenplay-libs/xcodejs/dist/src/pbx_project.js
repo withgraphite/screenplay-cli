@@ -393,7 +393,7 @@ class PBXProj {
         }
         return null;
     }
-    extractAppName(buildSettings) {
+    extractAppName(buildSettings, forceExpandBuildSettings = false) {
         // Get name from info plist
         const plist = plist_1.Plist.fromFile(path.isAbsolute(buildSettings.fetch("INFOPLIST_FILE"))
             ? buildSettings.fetch("INFOPLIST_FILE")
@@ -401,7 +401,8 @@ class PBXProj {
         let name = plist.get("CFBundleDisplayName") || plist.get("CFBundleName");
         // interpolate in build settings values
         const expandBuildSettings = buildSettings.get("INFOPLIST_EXPAND_BUILD_SETTINGS");
-        if (expandBuildSettings && expandBuildSettings !== "NO") {
+        if ((expandBuildSettings && expandBuildSettings !== "NO") ||
+            forceExpandBuildSettings) {
             name = buildSettings.expand(name);
         }
         return name;
@@ -468,6 +469,8 @@ class PBXProj {
     deepDuplicate(id, forceDuplicate) {
         return this.deepDuplicateInternal(id, {}, forceDuplicate);
     }
+    // TODO: Fix this the next time the file is edited.
+    // eslint-disable-next-line max-lines-per-function
     deepDuplicateInternal(id, reboundKeys, forceDuplicate) {
         // before all else, check reboundKeys
         if (id in reboundKeys) {

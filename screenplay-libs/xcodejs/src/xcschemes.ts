@@ -203,15 +203,14 @@ export function removeAllTests(opts: {
       defn["Scheme"]["BuildAction"]["BuildActionEntries"]["BuildActionEntry"]
     )
   ) {
-    defn["Scheme"]["BuildAction"]["BuildActionEntries"][
-      "BuildActionEntry"
-    ] = defn["Scheme"]["BuildAction"]["BuildActionEntries"][
-      "BuildActionEntry"
-    ].filter((entry) => {
-      return !entry["BuildableReference"]["_attributes"][
-        "BuildableName"
-      ].endsWith("xctest");
-    });
+    defn["Scheme"]["BuildAction"]["BuildActionEntries"]["BuildActionEntry"] =
+      defn["Scheme"]["BuildAction"]["BuildActionEntries"][
+        "BuildActionEntry"
+      ].filter((entry) => {
+        return !entry["BuildableReference"]["_attributes"][
+          "BuildableName"
+        ].endsWith("xctest");
+      });
   }
 
   defn["Scheme"]["TestAction"]["Testables"]["TestableReference"] = [];

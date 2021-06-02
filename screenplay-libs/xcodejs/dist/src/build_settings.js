@@ -18,27 +18,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBuildSettingsAndTargetNameFromTarget = void 0;
-const chalk_1 = __importDefault(require("chalk"));
-const child_process_1 = require("child_process");
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
 class BuildSettings {
     constructor(defn) {
-        if (!defn["TARGET_BUILD_DIR"]) {
-            throw new Error(`Build settings missing value for TARGET_BUILD_DIR, xcodebuild call likely failed before completing`);
-        }
         this._defn = defn;
     }
     static loadFromFile(filePath) {
         return new BuildSettings(JSON.parse(fs.readFileSync(filePath).toString()));
-    }
-    static loadFromProject(project, target, options) {
-        return getBuildSettingsAndTargetNameFromTarget(project, target, options)[0];
     }
     writeToFile(filePath) {
         fs.writeFileSync(filePath, JSON.stringify(this._defn, null, 2));
@@ -174,18 +162,4 @@ class BuildSettings {
     }
 }
 exports.default = BuildSettings;
-function getBuildSettingsAndTargetNameFromTarget(project, target, options) {
-    const buildSettingsArray = JSON.parse(child_process_1.execSync(`xcodebuild -showBuildSettings -json -project "${project}" -target "${target}"`)
-        .toString()
-        .trim());
-    if (buildSettingsArray.length !== 1) {
-        console.log(chalk_1.default.yellow("Warning! Target has more than one match"));
-        process.exit(1);
-    }
-    return [
-        new BuildSettings(buildSettingsArray[0]["buildSettings"]),
-        buildSettingsArray[0]["target"].replace(/(^")|("$)/g, ""),
-    ];
-}
-exports.getBuildSettingsAndTargetNameFromTarget = getBuildSettingsAndTargetNameFromTarget;
 //# sourceMappingURL=build_settings.js.map

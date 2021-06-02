@@ -8,10 +8,11 @@ export declare function addScreenplayAppTarget(opts: {
     withExtensions?: boolean;
     withFromApp?: boolean;
     alwaysEnable?: boolean;
+    acceptPrompts: boolean;
 } & ({
-    newAppToken: string;
-    appToken: undefined;
+    installToken: string;
+    appSecret: undefined;
 } | {
-    appToken: string;
-    newAppToken: undefined;
+    appSecret: string;
+    installToken: undefined;
 })): Promise<string | null>;

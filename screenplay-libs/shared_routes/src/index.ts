@@ -1,5 +1,6 @@
 export { default as api } from "./api";
 export { default as assets } from "./assets";
+export * as cereal from "./cereal";
 export { default as ff } from "./ff";
 export { default as oauth } from "./oauth";
 export * as request from "./request";

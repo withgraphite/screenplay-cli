@@ -4,16 +4,17 @@ export declare type BaseArgs = {
 };
 export declare type AddTargetArgs = BaseArgs & {
     "app-target"?: string;
+    "accept-prompts-for-ci": boolean;
 };
 export declare type InstallArgs = AddTargetArgs & {
     "with-tests": boolean;
     "always-enable": boolean;
 } & ({
-    key: string;
-    appToken: undefined;
+    "install-token": string;
+    "app-secret": undefined;
 } | {
-    key: undefined;
-    appToken: string;
+    "install-token": undefined;
+    "app-secret": string;
 });
 export declare type InstallVersionBundleArgs = AddTargetArgs & {
     destination: string;

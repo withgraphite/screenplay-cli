@@ -47,10 +47,9 @@ function removeScreenplayIcon(xcodeProject: PBXProject) {
         xcodeProject._defn["objects"][key]["children"].includes(pbxGroupId)
     );
     if (rootGroupId) {
-      xcodeProject._defn["objects"][rootGroupId]["children"] = (xcodeProject
-        ._defn["objects"][rootGroupId]["children"] as string[]).filter(
-        (id) => id != pbxGroupId
-      );
+      xcodeProject._defn["objects"][rootGroupId]["children"] = (
+        xcodeProject._defn["objects"][rootGroupId]["children"] as string[]
+      ).filter((id) => id != pbxGroupId);
     }
   }
   idsToRemove.forEach((key) => {
@@ -95,16 +94,14 @@ export function removeScreenplayManagedTargetsAndProducts(
 
         const product = target.product();
 
-        const productRefGroupId = xcodeProject.rootObject()._defn[
-          "productRefGroup"
-        ];
-        xcodeProject._defn["objects"][productRefGroupId][
-          "children"
-        ] = xcodeProject._defn["objects"][productRefGroupId]["children"].filter(
-          (productId: string) => {
-            return productId !== product._id;
-          }
-        );
+        const productRefGroupId =
+          xcodeProject.rootObject()._defn["productRefGroup"];
+        xcodeProject._defn["objects"][productRefGroupId]["children"] =
+          xcodeProject._defn["objects"][productRefGroupId]["children"].filter(
+            (productId: string) => {
+              return productId !== product._id;
+            }
+          );
 
         product.remove();
 
@@ -113,9 +110,7 @@ export function removeScreenplayManagedTargetsAndProducts(
           dep.remove();
         });
 
-        xcodeProject.rootObject()._defn[
-          "targets"
-        ] = xcodeProject
+        xcodeProject.rootObject()._defn["targets"] = xcodeProject
           .rootObject()
           ._defn["targets"].filter((targetId: string) => {
             return targetId !== target._id;

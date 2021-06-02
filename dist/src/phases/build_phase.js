@@ -8,7 +8,7 @@ function addScreenplayBuildPhase(xcodeProject, shellScript) {
     xcodeProject._defn["objects"][buildPhaseId] = {
         isa: "PBXShellScriptBuildPhase",
         buildActionMask: "2147483647",
-        name: "Run Script: Generate Screenplay Project",
+        name: "Screenplay",
         runOnlyForDeploymentPostprocessing: "0",
         shellPath: "/bin/sh",
         shellScript: shellScript,

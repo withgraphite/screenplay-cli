@@ -60,8 +60,9 @@ export function extractScreenplayReinstallDetails(
     "xcode-project": xcodeProjectPath,
     "app-target": target.name(),
     "with-tests": false,
-    key: undefined,
-    appToken: settings["SCREENPLAY_APP_KEY"],
+    "install-token": undefined,
+    "app-secret": settings["SCREENPLAY_APP_KEY"],
     "always-enable": false,
+    "accept-prompts-for-ci": false,
   };
 }

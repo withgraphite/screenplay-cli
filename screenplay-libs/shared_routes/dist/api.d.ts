@@ -36,6 +36,17 @@ declare const API_ROUTES: {
             };
         };
     };
+    readonly buildAuthor: {
+        readonly bind: {
+            readonly method: "POST";
+            readonly url: "/build-author/link";
+            readonly queryParams: {};
+            readonly params: {
+                readonly authorId: t.StringType;
+                readonly releaseId: t.StringType;
+            };
+        };
+    };
     readonly versionBundles: {
         readonly upload: {
             readonly method: "POST";
@@ -99,6 +110,18 @@ declare const API_ROUTES: {
                 readonly newAppToken: t.StringType;
             };
         };
+        readonly getSecret: {
+            readonly method: "GET";
+            readonly url: "/app/secret";
+            readonly urlParams: {};
+            readonly queryParams: {
+                readonly newAppToken: t.StringType;
+                readonly bundleIdentifier: t.StringType;
+            };
+            readonly response: {
+                readonly appSecret: t.UnionType<string, undefined>;
+            };
+        };
         readonly create: {
             readonly method: "POST";
             readonly url: "/new-app/:newAppToken";
@@ -106,6 +129,7 @@ declare const API_ROUTES: {
                 readonly newAppToken: t.StringType;
             };
             readonly params: {
+                readonly bundleIdentifier: t.UnionType<string, undefined>;
                 readonly name: t.StringType;
             };
             readonly response: {
@@ -132,6 +156,12 @@ declare const API_ROUTES: {
                 readonly includeDefaultVersions: t.BooleanType;
                 readonly maxSemverForDefaultVersions: t.StringType;
                 readonly archs: t.ArrayType<string>;
+                readonly withFallbackVersion: t.UnionType<string, undefined>;
+                readonly plistOverrides: t.UnionType<string[], undefined>;
+                readonly buildAuthor: t.UnionType<string, undefined>;
+                readonly buildAction: t.UnionType<string, undefined>;
+                readonly buildConfiguration: t.UnionType<string, undefined>;
+                readonly clobberPaths: t.UnionType<string[], undefined>;
             };
             readonly response: {
                 readonly id: t.StringType;
@@ -151,6 +181,8 @@ declare const API_ROUTES: {
             readonly response: {
                 readonly status: t.PluralUnionType<t.LiteralType<"BOOTING" | "WORKING" | "SUCCESS" | "FAILURE">, "BOOTING" | "WORKING" | "SUCCESS" | "FAILURE">;
                 readonly downloadURL: t.UnionType<string, undefined>;
+                readonly appId: t.UnionType<string, undefined>;
+                readonly releaseId: t.UnionType<string, undefined>;
             };
         };
     };
@@ -177,11 +209,30 @@ declare const API_ROUTES: {
                 readonly name: t.StringType;
                 readonly created: t.NumberType;
                 readonly userCount: t.NumberType;
+                readonly size: t.UnionType<number, null>;
+                readonly status: t.PluralUnionType<t.LiteralType<"IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE">, "IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE">;
+                readonly newerVersionInAppStore: t.BooleanType;
+                readonly releasedDate: t.UnionType<number, null>;
+                readonly buildReport: t.UnionType<{
+                    buildRequest: {
+                        buildConfiguration: string;
+                        buildAction: string;
+                        author: {
+                            firstName: string;
+                            lastName: string;
+                            profilePicture: string | null;
+                            email: string;
+                        } | null;
+                    };
+                    didFallback: boolean;
+                    fallbackReason: string | undefined;
+                }, null>;
                 readonly timeline: t.ArrayType<{
                     actor: {
                         firstName: string;
                         lastName: string;
                         profilePicture: string | null;
+                        email: string;
                     } | null;
                     date: number;
                     event: {
@@ -195,6 +246,10 @@ declare const API_ROUTES: {
                     id: string;
                     name: string;
                     color: string;
+                    size: number | null;
+                    fileSizeTreeURL: string | null;
+                    receivingTraffic: boolean;
+                    default: boolean;
                 }>;
             };
         };
@@ -292,6 +347,7 @@ declare const API_ROUTES: {
                 readonly store: t.LiteralType<"IOS">;
                 readonly totalUsers: t.NumberType;
                 readonly totalReleases: t.NumberType;
+                readonly totalBuilds: t.NumberType;
                 readonly mostRecentReleases: t.ArrayType<{
                     id: string;
                     name: string;
@@ -299,9 +355,9 @@ declare const API_ROUTES: {
                 }>;
             };
         };
-        readonly releases: {
+        readonly buildsAfterLatestRelease: {
             readonly method: "GET";
-            readonly url: "/app/:appId/releases";
+            readonly url: "/app/:appId/new-releases";
             readonly urlParams: {
                 readonly appId: t.StringType;
             };
@@ -314,12 +370,144 @@ declare const API_ROUTES: {
                     name: string;
                     createdAt: number;
                     users: number;
-                    builtForRelease: boolean;
+                    majorVersion: number;
+                    minorVersion: number;
+                    patchVersion: number;
+                    status: "IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE";
+                    newerVersionInAppStore: boolean;
+                    releasedDate: number | null;
                     versions: {
                         name: string;
                         receivingTraffic: boolean;
                     }[];
+                    buildReport: {
+                        buildRequest: {
+                            buildConfiguration: string;
+                            buildAction: string;
+                            author: {
+                                firstName: string;
+                                lastName: string;
+                                profilePicture: string | null;
+                                email: string;
+                            } | null;
+                        };
+                    } | null;
                 }>;
+            };
+        };
+        readonly buildsBeforeLatestRelease: {
+            readonly method: "GET";
+            readonly url: "/app/:appId/previous-releases";
+            readonly urlParams: {
+                readonly appId: t.StringType;
+            };
+            readonly queryParams: {
+                readonly beforeDate: t.UnionType<string, undefined>;
+                readonly beforeMajorVersion: t.UnionType<string, undefined>;
+                readonly beforeMinorVersion: t.UnionType<string, undefined>;
+                readonly beforePatchVersion: t.UnionType<string, undefined>;
+            };
+            readonly response: {
+                readonly releases: t.ArrayType<{
+                    id: string;
+                    name: string;
+                    createdAt: number;
+                    users: number;
+                    majorVersion: number;
+                    minorVersion: number;
+                    patchVersion: number;
+                    status: "IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE";
+                    newerVersionInAppStore: boolean;
+                    releasedDate: number | null;
+                    versions: {
+                        name: string;
+                        receivingTraffic: boolean;
+                    }[];
+                    buildReport: {
+                        buildRequest: {
+                            buildConfiguration: string;
+                            buildAction: string;
+                            author: {
+                                firstName: string;
+                                lastName: string;
+                                profilePicture: string | null;
+                                email: string;
+                            } | null;
+                        };
+                    } | null;
+                }>;
+            };
+        };
+        readonly releasesInAppStore: {
+            readonly method: "GET";
+            readonly url: "/app/:appId/app-store-releases";
+            readonly urlParams: {
+                readonly appId: t.StringType;
+            };
+            readonly queryParams: {
+                readonly beforeMajorVersion: t.UnionType<string, undefined>;
+                readonly beforeMinorVersion: t.UnionType<string, undefined>;
+                readonly beforePatchVersion: t.UnionType<string, undefined>;
+            };
+            readonly response: {
+                readonly releases: t.ArrayType<{
+                    id: string;
+                    name: string;
+                    createdAt: number;
+                    users: number;
+                    majorVersion: number;
+                    minorVersion: number;
+                    patchVersion: number;
+                    status: "IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE";
+                    newerVersionInAppStore: boolean;
+                    releasedDate: number | null;
+                    versions: {
+                        name: string;
+                        receivingTraffic: boolean;
+                    }[];
+                    buildReport: {
+                        buildRequest: {
+                            buildConfiguration: string;
+                            buildAction: string;
+                            author: {
+                                firstName: string;
+                                lastName: string;
+                                profilePicture: string | null;
+                                email: string;
+                            } | null;
+                        };
+                    } | null;
+                }>;
+            };
+        };
+        readonly releasesForSemver: {
+            readonly method: "GET";
+            readonly url: "/app/:appId/semver/:semver";
+            readonly urlParams: {
+                readonly appId: t.StringType;
+                readonly semver: t.StringType;
+            };
+            readonly response: {
+                readonly releases: t.ArrayType<{
+                    id: string;
+                    name: string;
+                    createdAt: number;
+                    users: number;
+                    released: boolean;
+                }>;
+                readonly releaseDate: t.UnionType<number, null>;
+            };
+        };
+        readonly updateReleaseForSemver: {
+            readonly method: "PUT";
+            readonly url: "/app/:appId/semver/:semver";
+            readonly urlParams: {
+                readonly appId: t.StringType;
+                readonly semver: t.StringType;
+            };
+            readonly params: {
+                readonly id: t.UnionType<string, null>;
+                readonly releaseDate: t.UnionType<number, null>;
             };
         };
     };
@@ -429,6 +617,13 @@ declare const API_ROUTES: {
         };
     };
     readonly blogs: {
+        readonly latestPost: {
+            readonly method: "GET";
+            readonly url: "/blog/lastest-post";
+            readonly response: {
+                readonly id: t.StringType;
+            };
+        };
         readonly page: {
             readonly method: "GET";
             readonly url: "/blog/post/:id";
@@ -441,6 +636,13 @@ declare const API_ROUTES: {
                 readonly published: t.BooleanType;
                 readonly createdAt: t.NumberType;
                 readonly wordCount: t.NumberType;
+                readonly publishedAt: t.UnionType<number, null>;
+                readonly author: t.UnionType<{
+                    firstName: string;
+                    lastName: string;
+                    profilePicture: string | null;
+                    email: string | null;
+                }, null>;
             };
         };
         readonly pages: {
@@ -473,6 +675,8 @@ declare const API_ROUTES: {
                 readonly title: t.StringType;
                 readonly text: t.StringType;
                 readonly published: t.BooleanType;
+                readonly publishedAt: t.UnionType<number, null>;
+                readonly authorEmail: t.UnionType<string, null>;
             };
         };
         readonly deletePage: {
@@ -493,11 +697,13 @@ declare const API_ROUTES: {
                 lastName: t.StringType;
                 profilePicture: t.UnionType<string, undefined>;
                 email: t.StringType;
+                domain: t.UnionType<string, null>;
             }, {
                 firstName: string;
                 lastName: string;
                 profilePicture: string | undefined;
                 email: string;
+                domain: string | null;
             }>;
             readonly teams: t.ArrayType<{
                 id: string;
@@ -535,7 +741,7 @@ declare const API_ROUTES: {
             readonly method: "POST";
             readonly url: "/intercut/flags";
             readonly headers: {
-                readonly "X-SP-APP-SECRET": t.StringType;
+                readonly "X-SP-RELEASE-SECRET": t.StringType;
             };
             readonly params: {
                 readonly persistId: t.StringType;
@@ -608,6 +814,17 @@ declare const API_ROUTES: {
             readonly method: "POST";
             readonly url: "/user/me/acknowledge-orgs";
         };
+        readonly createOrg: {
+            readonly method: "POST";
+            readonly url: "/orgs";
+            readonly params: {
+                readonly name: t.StringType;
+                readonly withDomain: t.BooleanType;
+            };
+            readonly response: {
+                readonly orgId: t.StringType;
+            };
+        };
         readonly completeOnboarding: {
             readonly method: "POST";
             readonly url: "/user/me/complete-onboarding";
@@ -640,6 +857,7 @@ declare const API_ROUTES: {
                     lastName: string;
                     admin: boolean;
                     profilePicture: string | undefined;
+                    email: string;
                 }>;
                 readonly invites: t.ArrayType<{
                     id: string;
@@ -736,6 +954,15 @@ declare const API_ROUTES: {
             };
             readonly params: {
                 readonly emails: t.ArrayType<string>;
+            };
+        };
+    };
+    readonly employeesOnly: {
+        readonly growthDash: {
+            readonly method: "GET";
+            readonly url: "/employees-only/growth-dash";
+            readonly response: {
+                readonly values: t.ArrayType<string[]>;
             };
         };
     };

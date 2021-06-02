@@ -1,5 +1,5 @@
-import chalk from "chalk";
 import path from "path";
+import { logSuccess } from "splog";
 import { InstallArgs } from "../index";
 import { extractTarget, readProject } from "../lib/utils";
 import { addScreenplayAppTarget } from "../targets/screenplay_target";
@@ -15,9 +15,14 @@ export async function install(argv: InstallArgs) {
     xcodeProjectPath: argv["xcode-project"],
     xcodeProject: xcodeProject,
     appTarget: appTarget,
-    newAppToken: argv["key"] as string,
-    appToken: argv["appToken"] as undefined,
     alwaysEnable: argv["always-enable"],
+    acceptPrompts: argv["accept-prompts-for-ci"],
+    ...(argv["install-token"]
+      ? { installToken: argv["install-token"], appSecret: undefined }
+      : {
+          appSecret: argv["app-secret"]!,
+          installToken: undefined,
+        }),
   });
 
   if (argv["with-tests"]) {
@@ -33,7 +38,7 @@ export async function install(argv: InstallArgs) {
     path.join(argv["xcode-project"], "project.pbxproj")
   );
 
-  console.log(chalk.cyanBright("Screenplay successfully installed!"));
+  logSuccess("Screenplay successfully installed!");
   if (screenplayAppId) {
     console.log(
       `Visit https://screenplay.dev/app/${screenplayAppId} to manage rollbacks`

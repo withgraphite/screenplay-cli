@@ -1,6 +1,4 @@
-import BuildSettings, {
-  getBuildSettingsAndTargetNameFromTarget,
-} from "./src/build_settings";
+import BuildSettings from "./src/build_settings";
 import { destinationString, DestinationType } from "./src/destination_type";
 import PBXBuildConfig from "./src/pbx_build_config";
 import PBXBuildConfigList from "./src/pbx_build_config_list";
@@ -15,7 +13,13 @@ import PBXProject from "./src/pbx_project";
 import PBXRootObject from "./src/pbx_root_object";
 import PBXTargetDependency from "./src/pbx_target_dependency";
 import PBXTargetProxy from "./src/pbx_target_proxy";
-import { Plist } from "./src/plist";
+import {
+  IncompatiblePlistError,
+  Plist,
+  PlistMergeStrategies,
+  PlistMergeStrategy as PlistMergeStrategyT,
+  PlistOverrides as PlistOverridesT,
+} from "./src/plist";
 import * as PorkspaceType from "./src/porkspace_type";
 import * as Utils from "./src/utils";
 import { XCConfig } from "./src/xcconfig";
@@ -24,6 +28,7 @@ import { XCSettings } from "./src/xcsettings";
 import { XCWorkspace } from "./src/xcworkspace";
 
 export {
+  IncompatiblePlistError,
   PBXBuildConfig,
   PBXBuildConfigList,
   PBXBuildPhase,
@@ -38,15 +43,17 @@ export {
   PBXTargetDependency,
   PBXTargetProxy,
   Plist,
+  PlistMergeStrategies,
   XCConfig,
   XCWorkspace,
   XCSettings,
   Utils,
   XCSchemes,
   BuildSettings,
-  getBuildSettingsAndTargetNameFromTarget,
   DestinationType,
   destinationString,
 };
 
 export type PorkspacePath = PorkspaceType.PorkspacePath;
+export type PlistOverrides = PlistOverridesT;
+export type PlistMergeStrategy = PlistMergeStrategyT;

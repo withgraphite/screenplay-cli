@@ -8,6 +8,8 @@ exports.addTests = void 0;
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
 const xcodejs_1 = require("xcodejs");
+// TODO: Fix this the next time the file is edited.
+// eslint-disable-next-line max-lines-per-function
 function addTests(opts) {
     // Copy files
     const uiTestDir = path_1.default.join(opts.projectPath, "../ScreenplayUITests");

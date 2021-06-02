@@ -15,9 +15,11 @@ describe("reinstall", function () {
         fs_extra_1.default.copySync(path_1.default.join(__dirname, "resources/blank-objc-storyboard"), appDir.name);
         const xcodeprojDir = path_1.default.join(appDir.name, "blank-objc-storyboard.xcodeproj");
         const xcodeprojProjectDir = path_1.default.join(xcodeprojDir, "project.pbxproj");
-        child_process_1.execSync(`yarn cli install --appToken FAKE_TOKEN --xcode-project "${xcodeprojDir}"`, { stdio: "inherit" });
+        // Because the install script prompts the user to enter their app name, we need to
+        // pipe in a return to pass this.
+        child_process_1.execSync(`echo '\n' | yarn cli install --app-secret FAKE_TOKEN --xcode-project "${xcodeprojDir}"`, { stdio: "inherit" });
         const installedProject = xcodejs_1.PBXProject.readFileSync(xcodeprojProjectDir);
-        child_process_1.execSync(`yarn cli reinstall "${xcodeprojDir}" --app-target blank-objc-storyboard`, {
+        child_process_1.execSync(`echo '\n' | yarn cli reinstall "${xcodeprojDir}" --app-target blank-objc-storyboard`, {
             stdio: "inherit",
         });
         const reinstalledProject = xcodejs_1.PBXProject.readFileSync(xcodeprojProjectDir);

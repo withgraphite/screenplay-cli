@@ -19,7 +19,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requestWithArgs = exports.endpointWithArgs = void 0;
+exports.requestWithArgs = exports.formatReqDetails = exports.endpointWithArgs = void 0;
 require("isomorphic-fetch");
 const pathToRegexp = __importStar(require("path-to-regexp"));
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -57,7 +57,7 @@ exports.endpointWithArgs = endpointWithArgs;
 function request(url, verb, headers, body) {
     return fetch(url, Object.assign({ method: verb, mode: "cors", credentials: "include", headers: headers }, (body ? { body: body } : {})));
 }
-function requestWithArgs(apiServer, route, params, queryParams, urlParams, headers) {
+function formatReqDetails(apiServer, route, params, queryParams, urlParams, headers) {
     // Inspired by https://github.com/ReactTraining/react-router/blob/ea44618e68f6a112e48404b2ea0da3e207daf4f0/packages/react-router/modules/generatePath.js
     const path = urlParams
         ? pathToRegexp.compile(route.url)(urlParams)
@@ -75,7 +75,17 @@ function requestWithArgs(apiServer, route, params, queryParams, urlParams, heade
     else {
         body = route.rawBody ? params : JSON.stringify(params);
     }
-    return request(url, route.method, Object.assign(Object.assign({}, headers), { "Content-Type": "text/plain" }), body).then((response) => {
+    return {
+        url,
+        method: route.method,
+        headers: Object.assign(Object.assign({}, headers), { "Content-Type": "text/plain" }),
+        body,
+    };
+}
+exports.formatReqDetails = formatReqDetails;
+function requestWithArgs(apiServer, route, params, queryParams, urlParams, headers) {
+    const reqDetails = formatReqDetails(apiServer, route, params, queryParams, urlParams, headers);
+    return request(reqDetails.url, reqDetails.method, reqDetails.headers, reqDetails.body).then((response) => {
         // if there is supposed to be a response type, parse it
         if (!!route.response && response.status === 200) {
             return response.json().then((body) => {

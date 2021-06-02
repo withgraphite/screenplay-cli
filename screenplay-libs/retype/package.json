@@ -15,8 +15,8 @@
     "typescript": "^3.9.7"
   },
   "scripts": {
-    "build": "eslint index.ts --quiet --ext .ts && tsc",
-    "build-no-lint": "tsc",
+    "build": "tsc",
+    "lint": "eslint index.ts --quiet --ext .ts",
     "prepublishOnly": "yarn build"
   }
 }
