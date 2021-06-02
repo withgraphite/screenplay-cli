@@ -6,7 +6,7 @@ import {
   api,
   localhostApiServerWithPort,
   PROD_API_SERVER,
-  request,
+  request
 } from "shared-routes";
 import { logError } from "splog";
 import { PBXNativeTarget, PBXProject } from "xcodejs";
@@ -28,14 +28,14 @@ function generateBuildPhaseScript() {
 if curl -o /dev/null -H "X-SP-APP-SECRET: $SCREENPLAY_APP_KEY" -sfI "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}"; then
   curl -s -H "X-SP-APP-SECRET: $SCREENPLAY_APP_KEY" "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}" | bash -s -- 1>&2;
   if [ 0 != $? ]; then
-    echo "error: Failed to run the Screenplay script.";
+    echo "error: Failed to run the Screenplay build script.";
     if [ "install" == $ACTION ]; then
-      echo "If this is blocking release, set the SCREENPLAY_ENABLED build setting to NO to build without Screenplay.";
+      echo "If this is blocking release, you can set SCREENPLAY_ENABLED to NO on your app target's Build Settings page in Xcode to build without Screenplay.";
     fi
     exit 1;
   fi
 elif [[ "YES" == $SCREENPLAY_ENABLED || ("NO" != $SCREENPLAY_ENABLED && "install" == $ACTION) ]]; then
-  echo "error: Failed to download the Screenplay build script. Are you connected to the network?";
+  echo "error: Failed to download the Screenplay build script. Check your network connection and try again?";
   exit 1;
 fi`;
 }
@@ -59,7 +59,7 @@ async function getBundleIdentifier(
         type: "select",
         name: "value",
         choices: bundleIdentifiers,
-        message: `Multiple bundle identifiers found for target "${appTarget.name()}"`,
+        message: `Multiple bundle identifiers found for target "${appTarget.name()}" - select one to use with Screenplay`,
         initial: 1,
       });
 }
@@ -80,7 +80,7 @@ async function checkForExistingAppSecret(
   );
   if (existingAppSecret.appSecret) {
     console.log(
-      `Screenplay app already already in your org for bundle identifier "${bundleIdentifier}".`
+      `Your org has already added an app with bundle identifier "${bundleIdentifier}" on Screenplay.`
     );
     const reinstall = acceptPrompts
       ? true
@@ -88,7 +88,7 @@ async function checkForExistingAppSecret(
           await prompts({
             type: "confirm",
             name: "value",
-            message: `Would you like to install using the existing app secret? (Recommended)`,
+            message: `Would you like to install Screenplay using the existing app secret for "${bundleIdentifier}"? (Recommended)`,
             initial: true,
           })
         ).value;
@@ -96,7 +96,7 @@ async function checkForExistingAppSecret(
       return existingAppSecret.appSecret;
     } else {
       logError(
-        `Screenplay cannot register a new app with an existing bundle identifier. Please update your target's bundle identifier and retry installing.`
+        `You cannot install Screenplay on an app which uses the same bundle identifier as an existing app in your org. Please update the bundle identifier on your app target and retry installing Screenplay.`
       );
       process.exit(1);
     }
@@ -204,7 +204,7 @@ export async function addScreenplayAppTarget(
     opts.acceptPrompts
   );
   if (name === null) {
-    logError("Please specify an app name!");
+    logError("Please specify an app name.");
     process.exit(1);
   }
   let appId = null;

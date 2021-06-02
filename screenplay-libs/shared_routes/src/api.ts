@@ -203,11 +203,11 @@ const API_ROUTES = asRouteTree({
           name: t.string,
           icon: t.nullable(t.string),
           store: t.literals(["IOS"] as const),
-          totalUsers: t.number,
+          totalUsers: t.nullable(t.number),
         }),
         name: t.string,
         created: t.number,
-        userCount: t.number,
+        userCount: t.nullable(t.number),
         size: t.nullable(t.number),
         status: t.literals([
           "IN_APP_STORE",

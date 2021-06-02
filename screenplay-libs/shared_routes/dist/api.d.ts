@@ -199,16 +199,16 @@ declare const API_ROUTES: {
                     name: t.StringType;
                     icon: t.UnionType<string, null>;
                     store: t.PluralUnionType<t.LiteralType<"IOS">, "IOS">;
-                    totalUsers: t.NumberType;
+                    totalUsers: t.UnionType<number, null>;
                 }, {
                     name: string;
                     icon: string | null;
                     store: "IOS";
-                    totalUsers: number;
+                    totalUsers: number | null;
                 }>;
                 readonly name: t.StringType;
                 readonly created: t.NumberType;
-                readonly userCount: t.NumberType;
+                readonly userCount: t.UnionType<number, null>;
                 readonly size: t.UnionType<number, null>;
                 readonly status: t.PluralUnionType<t.LiteralType<"IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE">, "IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE">;
                 readonly newerVersionInAppStore: t.BooleanType;

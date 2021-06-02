@@ -40,7 +40,7 @@ function install(argv) {
         xcodeProject.writeFileSync(path_1.default.join(argv["xcode-project"], "project.pbxproj"));
         splog_1.logSuccess("Screenplay successfully installed!");
         if (screenplayAppId) {
-            console.log(`Visit https://screenplay.dev/app/${screenplayAppId} to manage rollbacks`);
+            console.log(`Visit https://screenplay.dev/app/${screenplayAppId} to view Screenplay builds & roll back`);
         }
     });
 }

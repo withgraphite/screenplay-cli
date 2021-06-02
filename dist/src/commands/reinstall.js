@@ -42,7 +42,7 @@ function extractScreenplayReinstallDetails(xcodeProjectPath, xcodeProject, targe
             return t.name() === "Screenplay-" + target.name();
         });
         if (!screenplayTarget) {
-            throw Error("Could not identify Screenplay target");
+            throw Error("Could not identify an existing installation of Screenplay - please use the 'install' command instead.");
         }
         settings = screenplayTarget
             .buildConfigurationList()

@@ -41,7 +41,7 @@ export async function install(argv: InstallArgs) {
   logSuccess("Screenplay successfully installed!");
   if (screenplayAppId) {
     console.log(
-      `Visit https://screenplay.dev/app/${screenplayAppId} to manage rollbacks`
+      `Visit https://screenplay.dev/app/${screenplayAppId} to view Screenplay builds & roll back`
     );
   }
 }

@@ -41,7 +41,7 @@ yargs_1.default
         demandOption: true,
     })
         .option("app-target", {
-        describe: "The name of the target which builds your app",
+        describe: "The name of the target which builds your app for release",
         type: "string",
         demandOption: false,
     })
@@ -50,24 +50,28 @@ yargs_1.default
         describe: "Whether to include tests to ensure the app boots properly. This is primarily just used to debug installations and during automated tests.",
         default: false,
         demandOption: false,
+        hidden: true,
     })
         .option("always-enable", {
         type: "boolean",
-        describe: "Whether to ALWAYS Screenplay builds (regardless of the configuration).",
+        describe: "Whether to ALWAYS build with Screenplay (regardless of the build configuration).",
         default: false,
         demandOption: false,
+        hidden: true,
     })
         .option("install-token", {
         type: "string",
-        describe: "The installation token, specific to your organization, that allows you to create a new app.",
+        describe: "The Screenplay app token that allows you to create a new app (you can get a new app token from https://screenplay.dev/create-app).",
     })
         .option("app-secret", {
         type: "string",
-        describe: "An app secret that's already been issued for this app (typically only used when reinstalling Screenplay on an XCode project).",
+        hidden: true,
+        describe: "An app secret that's already been issued for this app (typically only used when reinstalling Screenplay on an XCode project - this is different from the installation token).",
     })
         .option("accept-prompts-for-ci", {
         type: "boolean",
         alias: "y",
+        hidden: true,
         default: false,
         describe: "Automatically accept any prompts",
     })
@@ -78,38 +82,38 @@ yargs_1.default
 }, (argv) => {
     return install_1.install(argv);
 })
-    .command("uninstall <xcode-project>", "Remove Screenplay entirely from the specified xcode project", (yargs) => {
+    .command("uninstall <xcode-project>", "Remove Screenplay entirely from the specified Xcode project", (yargs) => {
     yargs
         .positional("xcode-project", {
         describe: "The Xcode project to install Screenplay on",
     })
         .option("app-target", {
-        describe: "The name of the target which builds your app",
+        describe: "The name of the target which builds your app for release",
         type: "string",
         demandOption: false,
     });
 }, (argv) => {
     uninstall_1.uninstall(argv["xcode-project"], argv["app-target"]);
 })
-    .command("reinstall <xcode-project>", "Reinstall Screenplay on the specified xcode project", (yargs) => {
+    .command("reinstall <xcode-project>", "Reinstall Screenplay on the specified Xcode project", (yargs) => {
     yargs
         .positional("xcode-project", {
-        describe: "The Xcode project to install Screenplay on",
+        describe: "The Xcode project to reinstall Screenplay on",
     })
         .option("app-target", {
-        describe: "The name of the target which builds your app",
+        describe: "The name of the target which builds your app for release",
         type: "string",
         demandOption: false,
     });
 }, (argv) => __awaiter(void 0, void 0, void 0, function* () {
     yield reinstall_1.reinstall(argv["xcode-project"], argv["app-target"]);
 }))
-    .command("debug-metadata <xcode-project>", "Print the detected name and icon for an xcode project", (yargs) => {
+    .command("debug-metadata <xcode-project>", false, (yargs) => {
     yargs.positional("xcode-project", {
-        describe: "The Xcode project to install Screenplay on",
+        describe: "The Xcode project you're attempting to install Screenplay on",
     });
     yargs.option("app-target", {
-        describe: "The name of the target which builds your app",
+        describe: "The name of the target which builds your app for release",
     });
 }, (argv) => {
     debug_1.debugMetadata(argv["xcode-project"], argv["app-target"]);
@@ -121,7 +125,7 @@ yargs_1.default
     "  ___) | (__| | |  __/  __/ | | | |_) | | (_| | |_| |",
     " |____/ \\___|_|  \\___|\\___|_| |_| .__/|_|\\__,_|\\__, |",
     "                                |_|            |___/ ",
-    `Create confidently - ${chalk_1.default.cyanBright("Sign up at https://screenplay.dev")}`,
+    `The rewind button for your iOS releases - ${chalk_1.default.cyanBright("Sign up at https://screenplay.dev")}`,
     "",
     "The Screenplay CLI helps you add and remove Screenplay",
     "from your Xcode projects.",
