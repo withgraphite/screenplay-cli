@@ -9,6 +9,7 @@ export class IncompatiblePlistError extends Error {}
 
 export const PlistMergeStrategies = [
   "TakeLatestBundleValue",
+  "TakeLatestNonNullOrUndefinedBundleValue",
   "TakeGreatestSemverValue",
 ] as const;
 export type PlistMergeStrategy = typeof PlistMergeStrategies[number];
@@ -132,6 +133,13 @@ export class Plist {
       case "TakeLatestBundleValue": {
         const newestVal = values[0]; // Risky ordering assumption
         return newestVal;
+      }
+      case "TakeLatestNonNullOrUndefinedBundleValue": {
+        return (
+          values.find(
+            (bundleValue) => bundleValue !== null && bundleValue !== undefined
+          ) ?? null
+        );
       }
       case "TakeGreatestSemverValue":
         return values.sort(semverCompare).reverse()[0];

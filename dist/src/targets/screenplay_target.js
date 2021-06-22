@@ -53,13 +53,13 @@ function getBundleIdentifier(appTarget, acceptPrompts) {
         ];
         return bundleIdentifiers.length == 1 || acceptPrompts
             ? bundleIdentifiers[0]
-            : yield prompts_1.default({
+            : bundleIdentifiers[(yield prompts_1.default({
                 type: "select",
                 name: "value",
                 choices: bundleIdentifiers,
                 message: `Multiple bundle identifiers found for target "${appTarget.name()}" - select one to use with Screenplay`,
-                initial: 1,
-            });
+                initial: 0,
+            })).value];
     });
 }
 function checkForExistingAppSecret(installToken, bundleIdentifier, acceptPrompts) {

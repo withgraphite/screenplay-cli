@@ -6,7 +6,7 @@ import {
   api,
   localhostApiServerWithPort,
   PROD_API_SERVER,
-  request
+  request,
 } from "shared-routes";
 import { logError } from "splog";
 import { PBXNativeTarget, PBXProject } from "xcodejs";
@@ -55,13 +55,17 @@ async function getBundleIdentifier(
 
   return bundleIdentifiers.length == 1 || acceptPrompts
     ? bundleIdentifiers[0]
-    : await prompts({
-        type: "select",
-        name: "value",
-        choices: bundleIdentifiers,
-        message: `Multiple bundle identifiers found for target "${appTarget.name()}" - select one to use with Screenplay`,
-        initial: 1,
-      });
+    : bundleIdentifiers[
+        (
+          await prompts({
+            type: "select",
+            name: "value",
+            choices: bundleIdentifiers,
+            message: `Multiple bundle identifiers found for target "${appTarget.name()}" - select one to use with Screenplay`,
+            initial: 0,
+          })
+        ).value
+      ];
 }
 
 async function checkForExistingAppSecret(

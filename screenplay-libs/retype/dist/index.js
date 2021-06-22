@@ -193,7 +193,9 @@ function intersectMany(inner) {
 }
 exports.intersectMany = intersectMany;
 // Helpers
-function literals(inners) {
+function literals(
+// See below for why we exclude booleans here
+inners) {
     return unionMany(inners.map((value) => {
         // Note: we intentionally don't use literal(). The reason is that would
         // break literals([true, false] as const)

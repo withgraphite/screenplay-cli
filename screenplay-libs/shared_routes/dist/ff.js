@@ -24,6 +24,7 @@ const FEATURE_FLAGS = {
     killswitch: t.boolean,
     killswitchReason: t.string,
     rotoscopeKillswitch: t.boolean,
+    useRollbackFlowRedesign: t.boolean,
 };
 exports.default = FEATURE_FLAGS;
 //# sourceMappingURL=ff.js.map

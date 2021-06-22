@@ -1,6 +1,12 @@
 import * as t from "retype";
 import { asRouteTree } from "./base";
-import { release } from "./cereal";
+import {
+  release,
+  ReleaseIndicatorLiterals,
+  RollbackRuleConditionsData,
+  version,
+  VersionToBundleStateLiterals,
+} from "./cereal";
 import { default as ff } from "./ff";
 
 const API_ROUTES = asRouteTree({
@@ -209,6 +215,7 @@ const API_ROUTES = asRouteTree({
         created: t.number,
         userCount: t.nullable(t.number),
         size: t.nullable(t.number),
+        indicators: t.array(ReleaseIndicatorLiterals),
         status: t.literals([
           "IN_APP_STORE",
           "NOT_RELEASED",
@@ -346,6 +353,16 @@ const API_ROUTES = asRouteTree({
         everyoneElseVersionId: t.string,
       },
     },
+    releaseRollbackConditions: {
+      method: "GET",
+      url: "/app/:appId/rollback-conditons",
+      urlParams: {
+        appId: t.string,
+      },
+      response: {
+        conditions: RollbackRuleConditionsData,
+      },
+    },
     releaseRollbacksConditionTypeahead: {
       method: "GET",
       url: "/app/:appId/release/:releaseId/rollbacks/conditions",
@@ -384,6 +401,10 @@ const API_ROUTES = asRouteTree({
         totalUsers: t.number,
         totalReleases: t.number,
         totalBuilds: t.number,
+        versionsToBundle: t.shape({
+          versionNames: t.array(t.string),
+          state: VersionToBundleStateLiterals,
+        }),
         mostRecentReleases: t.array(
           t.shape({
             id: t.string,
@@ -422,6 +443,29 @@ const API_ROUTES = asRouteTree({
       },
       response: {
         releases: t.array(release),
+      },
+    },
+
+    setVersionsToBundle: {
+      method: "PUT",
+      url: "/app/:appId/versionToBundle",
+      urlParams: {
+        appId: t.string,
+      },
+      params: {
+        versionBundleIds: t.array(t.string),
+      },
+    },
+
+    versionsReleased: {
+      method: "GET",
+      url: "/app/:appId/versions-released",
+      urlParams: {
+        appId: t.string,
+      },
+      queryParams: {},
+      response: {
+        versions: t.array(version),
       },
     },
 
@@ -501,6 +545,9 @@ const API_ROUTES = asRouteTree({
           ),
         })
       ),
+      ff: t.shape({
+        ...ff,
+      }),
     },
   },
   docs: {
@@ -613,6 +660,7 @@ const API_ROUTES = asRouteTree({
         published: t.boolean,
         createdAt: t.number,
         wordCount: t.number,
+        coverPhoto: t.nullable(t.string),
         publishedAt: t.nullable(t.number),
         author: t.nullable(
           t.shape({
@@ -620,8 +668,57 @@ const API_ROUTES = asRouteTree({
             lastName: t.string,
             profilePicture: t.nullable(t.string),
             email: t.nullable(t.string),
+            twitterHandle: t.nullable(t.string),
           })
         ),
+        nextPost: t.nullable(
+          t.shape({
+            name: t.string,
+            id: t.string,
+          })
+        ),
+        previousPost: t.nullable(
+          t.shape({
+            name: t.string,
+            id: t.string,
+          })
+        ),
+      },
+    },
+    listAttachments: {
+      method: "GET",
+      url: "/blog/post/:id/attachments",
+      urlParams: {
+        id: t.string,
+      },
+      response: {
+        attachments: t.array(
+          t.shape({
+            id: t.string,
+            kind: t.literal("IMAGE" as const),
+            url: t.string,
+          })
+        ),
+      },
+    },
+    createImageAttachment: {
+      method: "POST",
+      url: "/blog/post/:id/image-attachments",
+      urlParams: {
+        id: t.string,
+      },
+      rawBody: true,
+      response: {
+        id: t.string,
+        url: t.string,
+      },
+    },
+    deleteAttachment: {
+      method: "DELETE",
+      url: "/blog/post/:id/attachment/:attachmentId",
+      urlParams: {
+        id: t.string,
+        attachmentId: t.string,
       },
     },
     pages: {
@@ -656,6 +753,7 @@ const API_ROUTES = asRouteTree({
         title: t.string,
         text: t.string,
         published: t.boolean,
+        coverPhoto: t.nullable(t.string),
         publishedAt: t.nullable(t.number),
         authorEmail: t.nullable(t.string),
       },
@@ -775,6 +873,7 @@ const API_ROUTES = asRouteTree({
         profilePicture: t.optional(t.string),
         email: t.string,
         domain: t.nullable(t.string),
+        twitterHandle: t.nullable(t.string),
         orgs: t.array(
           t.shape({
             id: t.string,
@@ -797,6 +896,13 @@ const API_ROUTES = asRouteTree({
       params: {
         firstName: t.string,
         lastName: t.string,
+      },
+    },
+    updateTwitterHandle: {
+      method: "PATCH",
+      url: "/user/me/twitter",
+      params: {
+        handle: t.string,
       },
     },
     completeSetup: {
@@ -960,6 +1066,7 @@ const API_ROUTES = asRouteTree({
       url: "/employees-only/growth-dash",
       response: {
         values: t.array(t.array(t.string)),
+        config: t.array(t.array(t.string)),
       },
     },
   },

@@ -19,7 +19,8 @@ export declare class UndefinedType extends Schema<undefined> {
 }
 export declare const undefinedtype: UndefinedType;
 declare type Extends<A, B> = [A] extends [B] ? true : false;
-declare type NonGeneric<A> = true extends Extends<string, A> | Extends<number, A> | Extends<boolean, A> ? never : A;
+declare type NonGenericExceptBooleans<A> = true extends Extends<string, A> | Extends<number, A> ? never : A;
+declare type NonGeneric<A> = true extends Extends<boolean, A> ? never : NonGenericExceptBooleans<A>;
 export declare class LiteralType<TInner> extends Schema<TInner> {
     _inner: TInner;
     constructor(inner: TInner);
@@ -105,7 +106,7 @@ export declare class PluralIntersectionType<TSchema extends Schema<unknown>, TIn
     is(value: unknown): value is TInnerSchemaType;
 }
 export declare function intersectMany<TSchema extends Schema<unknown>>(inner: TSchema[]): PluralIntersectionType<TSchema, TPluralIntersectionType<TSchema>>;
-export declare function literals<TLiterals>(inners: readonly TLiterals[]): PluralUnionType<LiteralType<TLiterals>, TLiterals>;
+export declare function literals<TLiterals>(inners: readonly NonGenericExceptBooleans<TLiterals>[]): PluralUnionType<LiteralType<NonGenericExceptBooleans<TLiterals>>, NonGenericExceptBooleans<TLiterals>>;
 export declare function optional<TInner>(inner: Schema<TInner>): UnionType<TInner, undefined>;
 export declare function nullable<TInner>(inner: Schema<TInner>): UnionType<TInner, null>;
 export {};

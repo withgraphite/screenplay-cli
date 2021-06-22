@@ -14,6 +14,7 @@ class IncompatiblePlistError extends Error {
 exports.IncompatiblePlistError = IncompatiblePlistError;
 exports.PlistMergeStrategies = [
     "TakeLatestBundleValue",
+    "TakeLatestNonNullOrUndefinedBundleValue",
     "TakeGreatestSemverValue",
 ];
 // Note: DO NOT ASSUME this is an info.plist (it could also be entitlements)
@@ -96,10 +97,14 @@ class Plist {
         return firstValue;
     }
     static mergeOverrideKey(mergeStrategy, values) {
+        var _a;
         switch (mergeStrategy) {
             case "TakeLatestBundleValue": {
                 const newestVal = values[0]; // Risky ordering assumption
                 return newestVal;
+            }
+            case "TakeLatestNonNullOrUndefinedBundleValue": {
+                return ((_a = values.find((bundleValue) => bundleValue !== null && bundleValue !== undefined)) !== null && _a !== void 0 ? _a : null);
             }
             case "TakeGreatestSemverValue":
                 return values.sort(semver_compare_1.default).reverse()[0];

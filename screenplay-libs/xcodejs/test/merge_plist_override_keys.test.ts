@@ -10,6 +10,34 @@ describe("merge_sample_plists", function () {
     );
   });
 
+  it("Takes latest non-null bundle value", () => {
+    expect(
+      Plist.mergeOverrideKey("TakeLatestNonNullOrUndefinedBundleValue", [
+        null,
+        0,
+        1,
+      ])
+    ).to.eql(0);
+    expect(
+      Plist.mergeOverrideKey("TakeLatestNonNullOrUndefinedBundleValue", [
+        undefined,
+        0,
+        1,
+      ])
+    ).to.eql(0);
+    expect(
+      Plist.mergeOverrideKey("TakeLatestNonNullOrUndefinedBundleValue", [null])
+    ).to.be.null;
+    expect(
+      Plist.mergeOverrideKey("TakeLatestNonNullOrUndefinedBundleValue", [
+        undefined,
+      ])
+    ).to.be.null;
+    expect(
+      Plist.mergeOverrideKey("TakeLatestNonNullOrUndefinedBundleValue", [0, 1])
+    ).to.eql(0);
+  });
+
   it("Takes bundle value with greatest semantic version", () => {
     expect(Plist.mergeOverrideKey("TakeGreatestSemverValue", ["14.3"])).to.eql(
       "14.3"

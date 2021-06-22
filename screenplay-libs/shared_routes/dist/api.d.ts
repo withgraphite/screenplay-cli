@@ -7,6 +7,7 @@ declare const API_ROUTES: {
             killswitch: t.BooleanType;
             killswitchReason: t.StringType;
             rotoscopeKillswitch: t.BooleanType;
+            useRollbackFlowRedesign: t.BooleanType;
         };
     };
     readonly health: {
@@ -210,6 +211,7 @@ declare const API_ROUTES: {
                 readonly created: t.NumberType;
                 readonly userCount: t.UnionType<number, null>;
                 readonly size: t.UnionType<number, null>;
+                readonly indicators: t.ArrayType<"VERSION_TO_BUNDLE" | "PARTIALLY_ROLLED_BACK" | "FULLY_ROLLED_BACK">;
                 readonly status: t.PluralUnionType<t.LiteralType<"IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE">, "IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE">;
                 readonly newerVersionInAppStore: t.BooleanType;
                 readonly releasedDate: t.UnionType<number, null>;
@@ -315,6 +317,118 @@ declare const API_ROUTES: {
                 readonly everyoneElseVersionId: t.StringType;
             };
         };
+        readonly releaseRollbackConditions: {
+            readonly method: "GET";
+            readonly url: "/app/:appId/rollback-conditons";
+            readonly urlParams: {
+                readonly appId: t.StringType;
+            };
+            readonly response: {
+                readonly conditions: t.ShapeType<{
+                    type: t.LiteralType<"ConditionCategories">;
+                    categories: t.ArrayType<{
+                        categoryName: string;
+                        categoryItems: {
+                            title: string;
+                            type: "MatchConditionItems";
+                            items: {
+                                displayName: string;
+                                rollbackRuleValue: string;
+                                rollbackRuleOp: "DEVICE_MATCHES" | "OS_MATCHES";
+                            }[];
+                        } | {
+                            title: string;
+                            type: "MatchConditionItemGroups";
+                            itemGroups: {
+                                groupName: string;
+                                groupItems: {
+                                    displayName: string;
+                                    rollbackRuleValue: string;
+                                    rollbackRuleOp: "DEVICE_MATCHES" | "OS_MATCHES";
+                                }[];
+                            }[];
+                        } | {
+                            title: string;
+                            type: "ConditionSubcategories";
+                            subcategories: {
+                                subcategoryName: string;
+                                subcategoryItems: {
+                                    title: string;
+                                    type: "MatchConditionItems";
+                                    items: {
+                                        displayName: string;
+                                        rollbackRuleValue: string;
+                                        rollbackRuleOp: "DEVICE_MATCHES" | "OS_MATCHES";
+                                    }[];
+                                } | {
+                                    title: string;
+                                    type: "MatchConditionItemGroups";
+                                    itemGroups: {
+                                        groupName: string;
+                                        groupItems: {
+                                            displayName: string;
+                                            rollbackRuleValue: string;
+                                            rollbackRuleOp: "DEVICE_MATCHES" | "OS_MATCHES";
+                                        }[];
+                                    }[];
+                                };
+                            }[];
+                        };
+                    }>;
+                }, {
+                    type: "ConditionCategories";
+                    categories: {
+                        categoryName: string;
+                        categoryItems: {
+                            title: string;
+                            type: "MatchConditionItems";
+                            items: {
+                                displayName: string;
+                                rollbackRuleValue: string;
+                                rollbackRuleOp: "DEVICE_MATCHES" | "OS_MATCHES";
+                            }[];
+                        } | {
+                            title: string;
+                            type: "MatchConditionItemGroups";
+                            itemGroups: {
+                                groupName: string;
+                                groupItems: {
+                                    displayName: string;
+                                    rollbackRuleValue: string;
+                                    rollbackRuleOp: "DEVICE_MATCHES" | "OS_MATCHES";
+                                }[];
+                            }[];
+                        } | {
+                            title: string;
+                            type: "ConditionSubcategories";
+                            subcategories: {
+                                subcategoryName: string;
+                                subcategoryItems: {
+                                    title: string;
+                                    type: "MatchConditionItems";
+                                    items: {
+                                        displayName: string;
+                                        rollbackRuleValue: string;
+                                        rollbackRuleOp: "DEVICE_MATCHES" | "OS_MATCHES";
+                                    }[];
+                                } | {
+                                    title: string;
+                                    type: "MatchConditionItemGroups";
+                                    itemGroups: {
+                                        groupName: string;
+                                        groupItems: {
+                                            displayName: string;
+                                            rollbackRuleValue: string;
+                                            rollbackRuleOp: "DEVICE_MATCHES" | "OS_MATCHES";
+                                        }[];
+                                    }[];
+                                };
+                            }[];
+                        };
+                    }[];
+                }>;
+            };
+        };
         readonly releaseRollbacksConditionTypeahead: {
             readonly method: "GET";
             readonly url: "/app/:appId/release/:releaseId/rollbacks/conditions";
@@ -348,6 +462,13 @@ declare const API_ROUTES: {
                 readonly totalUsers: t.NumberType;
                 readonly totalReleases: t.NumberType;
                 readonly totalBuilds: t.NumberType;
+                readonly versionsToBundle: t.ShapeType<{
+                    versionNames: t.ArrayType<string>;
+                    state: t.PluralUnionType<t.LiteralType<"NO_RELEASES" | "ONE_STABLE" | "BUNDLING_DISABLED" | "DEFAULT" | "NO_STABLE">, "NO_RELEASES" | "ONE_STABLE" | "BUNDLING_DISABLED" | "DEFAULT" | "NO_STABLE">;
+                }, {
+                    versionNames: string[];
+                    state: "NO_RELEASES" | "ONE_STABLE" | "BUNDLING_DISABLED" | "DEFAULT" | "NO_STABLE";
+                }>;
                 readonly mostRecentReleases: t.ArrayType<{
                     id: string;
                     name: string;
@@ -373,6 +494,7 @@ declare const API_ROUTES: {
                     majorVersion: number;
                     minorVersion: number;
                     patchVersion: number;
+                    indicators: ("VERSION_TO_BUNDLE" | "PARTIALLY_ROLLED_BACK" | "FULLY_ROLLED_BACK")[];
                     status: "IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE";
                     newerVersionInAppStore: boolean;
                     releasedDate: number | null;
@@ -416,6 +538,7 @@ declare const API_ROUTES: {
                     majorVersion: number;
                     minorVersion: number;
                     patchVersion: number;
+                    indicators: ("VERSION_TO_BUNDLE" | "PARTIALLY_ROLLED_BACK" | "FULLY_ROLLED_BACK")[];
                     status: "IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE";
                     newerVersionInAppStore: boolean;
                     releasedDate: number | null;
@@ -435,6 +558,33 @@ declare const API_ROUTES: {
                             } | null;
                         };
                     } | null;
+                }>;
+            };
+        };
+        readonly setVersionsToBundle: {
+            readonly method: "PUT";
+            readonly url: "/app/:appId/versionToBundle";
+            readonly urlParams: {
+                readonly appId: t.StringType;
+            };
+            readonly params: {
+                readonly versionBundleIds: t.ArrayType<string>;
+            };
+        };
+        readonly versionsReleased: {
+            readonly method: "GET";
+            readonly url: "/app/:appId/versions-released";
+            readonly urlParams: {
+                readonly appId: t.StringType;
+            };
+            readonly queryParams: {};
+            readonly response: {
+                readonly versions: t.ArrayType<{
+                    id: string;
+                    name: string;
+                    absoluteUsers: number;
+                    percentUsers: number;
+                    indicators: ("VERSION_TO_BUNDLE" | "PARTIALLY_ROLLED_BACK" | "FULLY_ROLLED_BACK")[];
                 }>;
             };
         };
@@ -458,6 +608,7 @@ declare const API_ROUTES: {
                     majorVersion: number;
                     minorVersion: number;
                     patchVersion: number;
+                    indicators: ("VERSION_TO_BUNDLE" | "PARTIALLY_ROLLED_BACK" | "FULLY_ROLLED_BACK")[];
                     status: "IN_APP_STORE" | "NOT_RELEASED" | "RELEASE_CANDIDATE";
                     newerVersionInAppStore: boolean;
                     releasedDate: number | null;
@@ -534,6 +685,17 @@ declare const API_ROUTES: {
                     };
                 }[];
             }, undefined>;
+            readonly ff: t.ShapeType<{
+                killswitch: t.BooleanType;
+                killswitchReason: t.StringType;
+                rotoscopeKillswitch: t.BooleanType;
+                useRollbackFlowRedesign: t.BooleanType;
+            }, {
+                killswitch: boolean;
+                killswitchReason: string;
+                rotoscopeKillswitch: boolean;
+                useRollbackFlowRedesign: boolean;
+            }>;
         };
     };
     readonly docs: {
@@ -636,13 +798,57 @@ declare const API_ROUTES: {
                 readonly published: t.BooleanType;
                 readonly createdAt: t.NumberType;
                 readonly wordCount: t.NumberType;
+                readonly coverPhoto: t.UnionType<string, null>;
                 readonly publishedAt: t.UnionType<number, null>;
                 readonly author: t.UnionType<{
                     firstName: string;
                     lastName: string;
                     profilePicture: string | null;
                     email: string | null;
+                    twitterHandle: string | null;
                 }, null>;
+                readonly nextPost: t.UnionType<{
+                    name: string;
+                    id: string;
+                }, null>;
+                readonly previousPost: t.UnionType<{
+                    name: string;
+                    id: string;
+                }, null>;
+            };
+        };
+        readonly listAttachments: {
+            readonly method: "GET";
+            readonly url: "/blog/post/:id/attachments";
+            readonly urlParams: {
+                readonly id: t.StringType;
+            };
+            readonly response: {
+                readonly attachments: t.ArrayType<{
+                    id: string;
+                    kind: "IMAGE";
+                    url: string;
+                }>;
+            };
+        };
+        readonly createImageAttachment: {
+            readonly method: "POST";
+            readonly url: "/blog/post/:id/image-attachments";
+            readonly urlParams: {
+                readonly id: t.StringType;
+            };
+            readonly rawBody: true;
+            readonly response: {
+                readonly id: t.StringType;
+                readonly url: t.StringType;
+            };
+        };
+        readonly deleteAttachment: {
+            readonly method: "DELETE";
+            readonly url: "/blog/post/:id/attachment/:attachmentId";
+            readonly urlParams: {
+                readonly id: t.StringType;
+                readonly attachmentId: t.StringType;
             };
         };
         readonly pages: {
@@ -675,6 +881,7 @@ declare const API_ROUTES: {
                 readonly title: t.StringType;
                 readonly text: t.StringType;
                 readonly published: t.BooleanType;
+                readonly coverPhoto: t.UnionType<string, null>;
                 readonly publishedAt: t.UnionType<number, null>;
                 readonly authorEmail: t.UnionType<string, null>;
             };
@@ -786,6 +993,7 @@ declare const API_ROUTES: {
                 readonly profilePicture: t.UnionType<string, undefined>;
                 readonly email: t.StringType;
                 readonly domain: t.UnionType<string, null>;
+                readonly twitterHandle: t.UnionType<string, null>;
                 readonly orgs: t.ArrayType<{
                     id: string;
                     name: string;
@@ -804,6 +1012,13 @@ declare const API_ROUTES: {
             readonly params: {
                 readonly firstName: t.StringType;
                 readonly lastName: t.StringType;
+            };
+        };
+        readonly updateTwitterHandle: {
+            readonly method: "PATCH";
+            readonly url: "/user/me/twitter";
+            readonly params: {
+                readonly handle: t.StringType;
             };
         };
         readonly completeSetup: {
@@ -963,6 +1178,7 @@ declare const API_ROUTES: {
             readonly url: "/employees-only/growth-dash";
             readonly response: {
                 readonly values: t.ArrayType<string[]>;
+                readonly config: t.ArrayType<string[]>;
             };
         };
     };

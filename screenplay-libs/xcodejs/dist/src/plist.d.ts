@@ -1,7 +1,7 @@
 import BuildSettings from "./build_settings";
 export declare class IncompatiblePlistError extends Error {
 }
-export declare const PlistMergeStrategies: readonly ["TakeLatestBundleValue", "TakeGreatestSemverValue"];
+export declare const PlistMergeStrategies: readonly ["TakeLatestBundleValue", "TakeLatestNonNullOrUndefinedBundleValue", "TakeGreatestSemverValue"];
 export declare type PlistMergeStrategy = typeof PlistMergeStrategies[number];
 export interface PlistOverrides {
     [key: string]: PlistMergeStrategy;

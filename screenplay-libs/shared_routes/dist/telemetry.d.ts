@@ -31,9 +31,11 @@ declare const API_ROUTES: {
         readonly method: "POST";
         readonly url: "/error-logging/build-phase";
         readonly params: {
-            readonly name: t.StringType;
-            readonly message: t.StringType;
-            readonly stack: t.StringType;
+            readonly errors: t.ArrayType<{
+                name: string;
+                message: string;
+                stack: string | undefined;
+            }>;
             readonly argv: t.ArrayType<string>;
             readonly appSecret: t.UnionType<string, undefined>;
         };

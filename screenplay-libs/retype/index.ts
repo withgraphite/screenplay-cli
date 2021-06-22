@@ -43,12 +43,14 @@ export const undefinedtype = new UndefinedType();
 // results in:
 // Extends<boolean, true> = Extends<true, true> | Extends<false, true> = true | false
 type Extends<A, B> = [A] extends [B] ? true : false;
-type NonGeneric<A> = true extends
+type NonGenericExceptBooleans<A> = true extends
   | Extends<string, A>
   | Extends<number, A>
-  | Extends<boolean, A>
   ? never
   : A;
+type NonGeneric<A> = true extends Extends<boolean, A>
+  ? never
+  : NonGenericExceptBooleans<A>;
 
 export class LiteralType<TInner> extends Schema<TInner> {
   _inner: TInner;
@@ -305,7 +307,10 @@ export function intersectMany<TSchema extends Schema<unknown>>(
 
 // Helpers
 
-export function literals<TLiterals>(inners: readonly TLiterals[]) {
+export function literals<TLiterals>(
+  // See below for why we exclude booleans here
+  inners: readonly NonGenericExceptBooleans<TLiterals>[]
+) {
   return unionMany(
     inners.map((value) => {
       // Note: we intentionally don't use literal(). The reason is that would

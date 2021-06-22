@@ -53,9 +53,11 @@ const API_ROUTES = base_1.asRouteTree({
         method: "POST",
         url: "/error-logging/build-phase",
         params: {
-            name: t.string,
-            message: t.string,
-            stack: t.string,
+            errors: t.array(t.shape({
+                name: t.string,
+                message: t.string,
+                stack: t.optional(t.string),
+            })),
             argv: t.array(t.string),
             appSecret: t.optional(t.string),
         },
