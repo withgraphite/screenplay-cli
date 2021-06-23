@@ -104,9 +104,16 @@ yargs_1.default
         describe: "The name of the target which builds your app for release",
         type: "string",
         demandOption: false,
+    })
+        .option("accept-prompts-for-ci", {
+        type: "boolean",
+        alias: "y",
+        hidden: true,
+        default: false,
+        describe: "Automatically accept any prompts",
     });
 }, (argv) => __awaiter(void 0, void 0, void 0, function* () {
-    yield reinstall_1.reinstall(argv["xcode-project"], argv["app-target"]);
+    yield reinstall_1.reinstall(argv["xcode-project"], argv["accept-prompts-for-ci"], argv["app-target"]);
 }))
     .command("debug-metadata <xcode-project>", false, (yargs) => {
     yargs.positional("xcode-project", {

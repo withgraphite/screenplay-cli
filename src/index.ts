@@ -142,11 +142,19 @@ yargs
           describe: "The name of the target which builds your app for release",
           type: "string",
           demandOption: false,
+        })
+        .option("accept-prompts-for-ci", {
+          type: "boolean",
+          alias: "y",
+          hidden: true,
+          default: false,
+          describe: "Automatically accept any prompts",
         });
     },
     async (argv) => {
       await reinstall(
         argv["xcode-project"] as string,
+        argv["accept-prompts-for-ci"] as boolean,
         argv["app-target"] as string | undefined
       );
     }
@@ -156,7 +164,8 @@ yargs
     false,
     (yargs) => {
       yargs.positional("xcode-project", {
-        describe: "The Xcode project you're attempting to install Screenplay on",
+        describe:
+          "The Xcode project you're attempting to install Screenplay on",
       });
       yargs.option("app-target", {
         describe: "The name of the target which builds your app for release",

@@ -1,12 +1,27 @@
 import { expect } from "chai";
 import { execSync } from "child_process";
 import fs from "fs-extra";
+import nock from "nock";
 import path from "path";
 import tmp from "tmp";
 import { PBXProject } from "xcodejs";
+import { install } from "../src/commands/install";
+
+function stubServer() {
+  nock(/.*api.screenplay.dev.*/)
+    .post("/v1/new-app/FAKE_TOKEN")
+    .reply(200, {
+      id: "123",
+      appSecret: "test_release_secret",
+    });
+}
 
 describe("reinstall", function () {
-  it("reinstalls correctly on blank app", (done) => {
+  before(() => {
+    stubServer();
+  });
+  this.timeout(60000);
+  it("reinstalls correctly on blank app", async () => {
     const appDir = tmp.dirSync({ keep: false });
     fs.copySync(
       path.join(__dirname, "resources/blank-objc-storyboard"),
@@ -18,17 +33,20 @@ describe("reinstall", function () {
     );
     const xcodeprojProjectDir = path.join(xcodeprojDir, "project.pbxproj");
 
-    // Because the install script prompts the user to enter their app name, we need to
-    // pipe in a return to pass this.
-    execSync(
-      `echo '\n' | yarn cli install --app-secret FAKE_TOKEN --xcode-project "${xcodeprojDir}"`,
-      { stdio: "inherit" }
-    );
+    await install({
+      "app-target": "blank-objc-storyboard",
+      "xcode-project": xcodeprojDir,
+      "accept-prompts-for-ci": true,
+      "with-tests": false,
+      "install-token": undefined,
+      "always-enable": false,
+      "app-secret": "FAKE_TOKEN",
+    });
 
     const installedProject = PBXProject.readFileSync(xcodeprojProjectDir);
 
     execSync(
-      `echo '\n' | yarn cli reinstall "${xcodeprojDir}" --app-target blank-objc-storyboard`,
+      `yarn cli reinstall "${xcodeprojDir}" --app-target blank-objc-storyboard --accept-prompts-for-ci`,
       {
         stdio: "inherit",
       }
@@ -48,6 +66,5 @@ describe("reinstall", function () {
         2
       ).replace(/[A-Z0-9]{24}/g, "123")
     );
-    done();
-  }).timeout(60000);
+  });
 });

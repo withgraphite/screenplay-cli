@@ -31,7 +31,7 @@ function generateBuildPhaseScript() {
 if curl -o /dev/null -H "X-SP-APP-SECRET: $SCREENPLAY_APP_KEY" -sfI "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}"; then
   curl -s -H "X-SP-APP-SECRET: $SCREENPLAY_APP_KEY" "${SCREENPLAY_BUILD_PHASE_DOWNLOADER}" | bash -s -- 1>&2;
   if [ 0 != $? ]; then
-    echo "error: Failed to run the Screenplay build script.";
+    echo "error: Screenplay detected a compatibility issue and stopped the build. Our engineers will reach out shortly to help resolve this issue.";
     if [ "install" == $ACTION ]; then
       echo "If this is blocking release, you can set SCREENPLAY_ENABLED to NO on your app target's Build Settings page in Xcode to build without Screenplay.";
     fi
@@ -98,6 +98,9 @@ function requestNewAppSecret(opts) {
         }, {}, {
             newAppToken: opts.installToken,
         });
+        if (appSecretRequest._response.status !== 200) {
+            throw Error("Could not request app secret from the server");
+        }
         const appSecret = appSecretRequest.appSecret;
         const appId = appSecretRequest.id;
         if (opts.icon) {

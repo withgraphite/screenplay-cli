@@ -7,6 +7,7 @@ import { removeScreenplayManagedTargetsAndProducts } from "./uninstall";
 
 export async function reinstall(
   xcodeProjectPath: string,
+  acceptPromptsForCi: boolean,
   appTargetName?: string
 ) {
   const xcodeProject = readProject(xcodeProjectPath);
@@ -18,6 +19,7 @@ export async function reinstall(
     xcodeProject,
     appTarget
   );
+  installDetails["accept-prompts-for-ci"] = acceptPromptsForCi;
 
   // uninstall
   removeScreenplayManagedTargetsAndProducts(
@@ -47,7 +49,9 @@ export function extractScreenplayReinstallDetails(
       return t.name() === "Screenplay-" + target.name();
     });
     if (!screenplayTarget) {
-      throw Error("Could not identify an existing installation of Screenplay - please use the 'install' command instead.");
+      throw Error(
+        "Could not identify an existing installation of Screenplay - please use the 'install' command instead."
+      );
     }
 
     settings = screenplayTarget
